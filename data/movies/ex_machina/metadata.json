@@ -1,0 +1,50 @@
+{
+  "title": "Ex Machina",
+  "href": "Ex Machina Script.html",
+  "imdb_id": "tt0470752",
+  "imdb_rating": 7.7,
+  "votes": 462655,
+  "genre": "Drama, Sci-Fi, Thriller",
+  "year": 2014,
+  "director": "Alex Garland",
+  "duration": 108.0,
+  "description": "A young programmer is selected to participate in a ground-breaking experiment in synthetic intelligence by evaluating the human qualities of a highly advanced humanoid A.I.",
+  "filmgrab_url": "https://film-grab.com/2015/07/17/ex-machina/",
+  "filmgrab_slug": "ex-machina",
+  "slug": "ex_machina",
+  "has_script": true,
+  "has_real_stills": true,
+  "real_stills_count": 6,
+  "script_metrics": {
+    "title": "Ex Machina",
+    "total_scenes": 142,
+    "total_words": 18611,
+    "dialogue_words": 7078,
+    "action_words": 11533,
+    "dialogue_ratio": 0.38,
+    "estimated_duration_min": 132.0,
+    "estimated_duration_sec": 7921.8,
+    "estimated_total_shots": 2067,
+    "cuts_per_minute": 15.66,
+    "words_per_minute": 53.6,
+    "climax_acceleration": 1.534,
+    "characters_count": 8,
+    "characters": [
+      "AUTOMATED VOICE",
+      "AVA",
+      "CALEB",
+      "CUT TO -",
+      "JAY",
+      "NATHAN",
+      "NON DISCLOSURE AGREEMENT",
+      "VIP EMAIL RECEIVED"
+    ]
+  },
+  "cv_metrics": {
+    "mean_luminance": 55.16,
+    "luminance_std": 19.27,
+    "mean_contrast": 38.39,
+    "dark_frame_ratio": 0.333,
+    "severe_darkness_penalty": 1.111
+  }
+}

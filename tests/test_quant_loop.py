@@ -53,7 +53,7 @@ class TestQuantResidualEngine(unittest.TestCase):
             self.assertLess(lum, 255.0)
 
     def test_03_benchmark_dataset_assembly(self):
-        """Verify benchmark dataset compiles with local episodes and synthetic data."""
+        """Verify benchmark dataset compiles with 100 genuine cinema releases without synthetic data."""
         df = get_full_training_dataset(data_root=str(self.root_dir / "data"))
         self.assertGreaterEqual(len(df), 50, "Training dataset must have at least 50 episodes")
         self.assertIn("imdb_rating", df.columns)

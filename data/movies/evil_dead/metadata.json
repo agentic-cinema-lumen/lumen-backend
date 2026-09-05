@@ -1,0 +1,44 @@
+{
+  "title": "Evil Dead",
+  "href": "Evil Dead Script.html",
+  "imdb_id": "tt1288558",
+  "imdb_rating": 6.5,
+  "votes": 153997,
+  "genre": "Fantasy, Horror, Thriller",
+  "year": 2013,
+  "director": "Fede Alvarez",
+  "duration": 91.0,
+  "description": "Five friends head to a remote cabin, where the discovery of a Book of the Dead leads them to unwittingly summon up demons living in the nearby woods.",
+  "filmgrab_url": "https://film-grab.com/2016/03/18/evil-dead/",
+  "filmgrab_slug": "evil-dead",
+  "primary_bucket": "Horror",
+  "slug": "evil_dead",
+  "has_script": true,
+  "has_real_stills": true,
+  "real_stills_count": 6,
+  "script_metrics": {
+    "title": "Evil Dead",
+    "total_scenes": 1,
+    "total_words": 11462,
+    "dialogue_words": 7,
+    "action_words": 11455,
+    "dialogue_ratio": 0.001,
+    "estimated_duration_min": 76.4,
+    "estimated_duration_sec": 4585.2,
+    "estimated_total_shots": 1206,
+    "cuts_per_minute": 15.78,
+    "words_per_minute": 0.1,
+    "climax_acceleration": 1.0,
+    "characters_count": 1,
+    "characters": [
+      "LINDA"
+    ]
+  },
+  "cv_metrics": {
+    "mean_luminance": 55.11,
+    "luminance_std": 29.59,
+    "mean_contrast": 56.04,
+    "dark_frame_ratio": 0.333,
+    "severe_darkness_penalty": 1.111
+  }
+}

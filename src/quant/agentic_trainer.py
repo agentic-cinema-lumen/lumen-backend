@@ -22,12 +22,12 @@ from src.utils.llm_client import LLMClient
 
 
 SYSTEM_PROMPT = """You are an expert Quantitative Cinema Statistician and Senior ML Engineer.
-Your role is to build a machine learning model that predicts expected television episode IMDb ratings
-based on cinematographic craft metrics (Average Shot Length, Cuts Per Minute, Dialogue density, Keyframe Luminance, Season Position).
+Your role is to iteratively engineer and optimize machine learning models that predict expected movie audience reception
+based on pre-production screenplay and cinematographic craft metrics (Cuts Per Minute, Climax Pacing Acceleration, Dialogue WPM, Keyframe Luminance & Contrast, Darkness Ratio, Runtime, and Genre Prior Baseline).
 
 You analyze data, formulate mathematical feature engineering hypotheses, critique residual errors,
 and output your decisions in structured JSON.
-Always focus on cinematographic theory (e.g. climax pacing build-up, visual lighting broadcast issues, dialogue rhythm).
+Always focus on cinematographic theory (e.g. climax pacing build-up, visual lighting broadcast issues, dialogue rhythm, runtime scope).
 """
 
 
@@ -57,10 +57,15 @@ class AgenticQuantTrainer:
         # Baseline Round 0: Evaluate base features
         print("\n--------------------------------------------------")
         print("🎬 ROUND 0: Agent Baseline Evaluation")
-        print("--------------------------------------------------")
-        base_model = QuantResidualModel(model_type="random_forest")
-        base_metrics = base_model.train_and_evaluate(self.dataset, cv_splits=5)
-        self.champion_model = base_model
+        m_ridge = QuantResidualModel(model_type="ridge")
+        m_rf = QuantResidualModel(model_type="random_forest")
+        m_gb = QuantResidualModel(model_type="gradient_boosting")
+        met_ridge = m_ridge.train_and_evaluate(self.dataset, cv_splits=5)
+        met_rf = m_rf.train_and_evaluate(self.dataset, cv_splits=5)
+        met_gb = m_gb.train_and_evaluate(self.dataset, cv_splits=5)
+        candidates = [(m_ridge, met_ridge), (m_rf, met_rf), (m_gb, met_gb)]
+        candidates.sort(key=lambda x: x[1]["cv_rmse"])
+        self.champion_model, base_metrics = candidates[0]
 
         round_0_record = {
             "round": 0,
@@ -68,7 +73,7 @@ class AgenticQuantTrainer:
             "feature_count": len(self.current_feature_names),
             "cv_r2": base_metrics["cv_r2"],
             "cv_rmse": base_metrics["cv_rmse"],
-            "top_features": base_model.feature_importances[:3]
+            "top_features": self.champion_model.feature_importances[:3]
         }
         self.history.append(round_0_record)
         print(f"  • Baseline CV R²: {base_metrics['cv_r2']:.3f} | CV RMSE: {base_metrics['cv_rmse']:.3f}")
@@ -92,22 +97,32 @@ class AgenticQuantTrainer:
             applied_count = self._apply_proposed_features(proposed)
 
             if applied_count > 0:
-                # Retrain candidate models
-                candidate_model = QuantResidualModel(model_type=agent_response.get("recommended_architecture", "random_forest"))
-                candidate_model.feature_names = list(self.current_feature_names)
-                new_metrics = candidate_model.train_and_evaluate(self.dataset, cv_splits=5)
+                # Retrain candidate models across architectures (recommended, current champion, and ridge)
+                archs = list(dict.fromkeys([agent_response.get("recommended_architecture", "ridge"), self.champion_model.model_type, "ridge"]))
+                candidates = []
+                for arch in archs:
+                    cm = QuantResidualModel(model_type=arch)
+                    cm.feature_names = list(self.current_feature_names)
+                    cm_metrics = cm.train_and_evaluate(self.dataset, cv_splits=5)
+                    candidates.append((cm, cm_metrics))
+                candidates.sort(key=lambda x: x[1]["cv_rmse"])
+                best_candidate, new_metrics = candidates[0]
 
                 r2_delta = new_metrics["cv_r2"] - self.champion_model.metrics["cv_r2"]
                 rmse_delta = new_metrics["cv_rmse"] - self.champion_model.metrics["cv_rmse"]
 
-                print(f"📈 Evaluation Delta -> CV R²: {new_metrics['cv_r2']:.3f} ({r2_delta:+.3f}) | RMSE: {new_metrics['cv_rmse']:.3f} ({rmse_delta:+.3f})")
+                print(f"📈 Evaluation Delta ({best_candidate.model_type}) -> CV R²: {new_metrics['cv_r2']:.3f} ({r2_delta:+.3f}) | RMSE: {new_metrics['cv_rmse']:.3f} ({rmse_delta:+.3f})")
 
-                # Keep champion if performance maintained or improved
-                if new_metrics["cv_r2"] >= self.champion_model.metrics["cv_r2"] - 0.05:
-                    self.champion_model = candidate_model
+                # Keep candidate if error did not significantly increase
+                if new_metrics["cv_rmse"] <= self.champion_model.metrics["cv_rmse"] + 0.05:
+                    self.champion_model = best_candidate
                     print("✅ [Agent] Feature proposal accepted into Champion Model!")
                 else:
                     print("⚠️ [Agent] Feature proposal rejected due to overfit. Reverting.")
+                    # Revert feature names
+                    for p in proposed:
+                        if p.get("name") in self.current_feature_names:
+                            self.current_feature_names.remove(p["name"])
 
                 self.history.append({
                     "round": round_idx,
@@ -138,25 +153,26 @@ class AgenticQuantTrainer:
         current_top = self.champion_model.feature_importances[:4]
         prompt = f"""
 Current Training State (Round {round_idx}):
-- Dataset size: {len(self.dataset)} episodes
-- Current Features: {self.current_feature_names}
+- Dataset size: {len(self.dataset)} cinema releases
+- Current Pre-Production Features: {self.current_feature_names}
 - Current Top Predictors: {current_top}
 - Current CV R²: {self.champion_model.metrics['cv_r2']}, CV RMSE: {self.champion_model.metrics['cv_rmse']}
 
-Task: Propose 2 to 3 new mathematical feature transformations derived from existing columns
-(e.g., cuts_per_minute, pacing_acceleration, dark_frame_ratio, words_per_minute, average_shot_length, season_position).
+Task: Propose 2 to 3 new mathematical feature transformations derived strictly from pre-production columns:
+(e.g., cuts_per_minute, pacing_acceleration, dark_frame_ratio, words_per_minute, average_shot_length, total_duration_min, mean_luminance, luminance_std, show_historical_mean, dialogue_shot_ratio).
+Do NOT propose post-release popularity variables like votes.
 
 Respond ONLY with a JSON object in this format:
 {{
-  "agent_reasoning": "Explanation of your cinematographic rationale...",
+  "agent_reasoning": "Explanation of your cinematographic craft rationale...",
   "proposed_features": [
     {{
       "name": "feature_name",
       "formula": "valid python expression using dataset column names",
-      "rationale": "Why this reflects television craft"
+      "rationale": "Why this reflects cinema craft"
     }}
   ],
-  "recommended_architecture": "random_forest"
+  "recommended_architecture": "ridge"
 }}
 """
         response_text = self.llm.generate(SYSTEM_PROMPT, prompt)
@@ -171,17 +187,10 @@ Respond ONLY with a JSON object in this format:
     def _apply_proposed_features(self, proposed_features: List[Dict[str, str]]) -> int:
         """Safely compute and add proposed features to the training DataFrame."""
         applied = 0
-        safe_env = {
-            "np": np,
-            "cuts_per_minute": self.dataset["cuts_per_minute"],
-            "pacing_acceleration": self.dataset["pacing_acceleration"],
-            "dark_frame_ratio": self.dataset["dark_frame_ratio"],
-            "words_per_minute": self.dataset["words_per_minute"],
-            "average_shot_length": self.dataset["average_shot_length"],
-            "mean_luminance": self.dataset["mean_luminance"],
-            "season_position": self.dataset["season_position"],
-            "dialogue_shot_ratio": self.dataset["dialogue_shot_ratio"]
-        }
+        safe_env = {"np": np}
+        for col in self.dataset.columns:
+            if np.issubdtype(self.dataset[col].dtype, np.number):
+                safe_env[col] = self.dataset[col]
 
         for feat in proposed_features:
             name = feat.get("name")
@@ -248,11 +257,41 @@ mathematical relationships mean for audience expectations and rating residuals.
                 features = extract_from_file(str(local_feat_path))
                 title = episode_identifier.capitalize()
                 show = features.get("show_name", title)
+        if features is None:
+            clean_slug = episode_identifier.replace("movie_", "")
+            movie_dir = Path(self.data_root) / "movies" / clean_slug
+            if movie_dir.exists() and (movie_dir / "metadata.json").exists():
+                with open(movie_dir / "metadata.json") as f:
+                    meta = json.load(f)
+                sm = meta.get("script_metrics", {})
+                cv = meta.get("cv_metrics", {})
+                from src.quant.movie_dataset_loader import MovieDatasetLoader
+                loader = MovieDatasetLoader.get_instance()
+                genre_base = loader.get_genre_expectation(meta.get("genre", "Drama"))
+                cpm = float(sm.get("cuts_per_minute", 15.0))
+                wpm = float(sm.get("words_per_minute", 100.0))
+                features = {
+                    "title": meta.get("title", clean_slug),
+                    "show_name": meta.get("title", clean_slug),
+                    "total_duration_min": float(sm.get("estimated_duration_min", 110.0)),
+                    "cuts_per_minute": round(cpm, 2),
+                    "pacing_acceleration": round(float(sm.get("climax_acceleration", 1.0)), 3),
+                    "average_shot_length": round(60.0 / max(cpm, 1.0), 2),
+                    "words_per_minute": round(wpm, 1),
+                    "lines_per_minute": round(wpm / 12.0, 2),
+                    "dialogue_shot_ratio": round(float(sm.get("dialogue_ratio", 0.5)), 3),
+                    "mean_luminance": round(float(cv.get("mean_luminance", 75.0)), 2),
+                    "luminance_std": round(float(cv.get("luminance_std", 25.0)), 2),
+                    "dark_frame_ratio": round(float(cv.get("dark_frame_ratio", 0.15)), 3),
+                    "show_historical_mean": round(genre_base, 2)
+                }
+                title = meta.get("title", clean_slug)
+                show = title
                 if actual_rating is None:
-                    actual_rating = 8.5
+                    actual_rating = float(meta.get("imdb_rating", 7.5))
 
         if features is None:
-            raise ValueError(f"Episode '{episode_identifier}' not found.")
+            raise ValueError(f"Title or Episode '{episode_identifier}' not found.")
 
         # Compute engineered features for this target episode
         if "climax_intensity_index" in self.champion_model.feature_names:

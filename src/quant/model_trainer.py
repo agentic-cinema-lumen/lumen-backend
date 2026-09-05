@@ -7,6 +7,7 @@ calculate residual craft variance.
 """
 
 from typing import Dict, Any, List, Tuple, Optional
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import Ridge
@@ -17,30 +18,40 @@ from sklearn.model_selection import KFold, cross_validate
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 
+# Pure Pre-Production Features (Strictly observable from Script + Keyframes + Genre Baseline)
+# Note: Post-release outcome variables (like log_votes or broadcast positioning) are excluded to prevent target leakage.
 FEATURE_COLUMNS = [
-    # Pacing
-    "average_shot_length",
-    "median_shot_length",
-    "shot_length_std",
+    # Script Pacing & Structure
+    "total_duration_min",
     "cuts_per_minute",
     "pacing_acceleration",
-    # Dialogue & Script
+    "average_shot_length",
+    # Script Dialogue Dynamics
     "words_per_minute",
     "lines_per_minute",
     "dialogue_shot_ratio",
-    "max_silence_sec",
-    # Visual
+    # Keyframe Visual Cinematography
     "mean_luminance",
     "luminance_std",
     "dark_frame_ratio",
-    # Structural Context
-    "season_position",
-    "is_premiere",
-    "is_finale",
-    "is_penultimate",
-    "show_historical_mean",
-    "log_votes"
+    # Prior Genre Expectation (from screenplay pitch / genre)
+    "show_historical_mean"
 ]
+
+# Benchmark cinema median defaults (from 100 genuine feature film packages)
+DEFAULT_FEATURE_VALUES: Dict[str, float] = {
+    "total_duration_min": 120.0,
+    "cuts_per_minute": 15.5,
+    "pacing_acceleration": 1.05,
+    "average_shot_length": 3.87,
+    "words_per_minute": 55.0,
+    "lines_per_minute": 4.5,
+    "dialogue_shot_ratio": 0.38,
+    "mean_luminance": 65.0,
+    "luminance_std": 30.0,
+    "dark_frame_ratio": 0.30,
+    "show_historical_mean": 6.33
+}
 
 
 class QuantResidualModel:
@@ -157,11 +168,64 @@ class QuantResidualModel:
 
         row = []
         for f in self.feature_names:
-            row.append(float(features.get(f, 0.0)))
+            val = features.get(f)
+            if val is None:
+                val = DEFAULT_FEATURE_VALUES.get(f, 0.0)
+            row.append(float(val))
 
         X_input = pd.DataFrame([row], columns=self.feature_names)
         pred = float(self.pipeline.predict(X_input)[0])
         return round(float(np.clip(pred, 1.0, 10.0)), 2)
+
+    def explain_prediction(self, features: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Explain the prediction by calculating each feature's point contribution (delta)
+        relative to the cinema average.
+        """
+        if self.pipeline is None:
+            return []
+
+        row = []
+        for f in self.feature_names:
+            val = features.get(f)
+            if val is None:
+                val = DEFAULT_FEATURE_VALUES.get(f, 0.0)
+            row.append(float(val))
+
+        explanations = []
+        if self.model_type == "ridge" and hasattr(self.pipeline, "named_steps"):
+            scaler = self.pipeline.named_steps.get("scaler")
+            regressor = self.pipeline.named_steps.get("regressor")
+            if scaler is not None and regressor is not None:
+                means = scaler.mean_
+                scales = scaler.scale_
+                coefs = regressor.coef_
+
+                for i, f in enumerate(self.feature_names):
+                    val = row[i]
+                    z_score = (val - means[i]) / (scales[i] + 1e-9)
+                    impact = round(float(z_score * coefs[i]), 3)
+                    explanations.append({
+                        "feature": f,
+                        "value": round(val, 2),
+                        "benchmark_mean": round(float(means[i]), 2),
+                        "point_impact": impact,
+                        "direction": "positive" if impact > 0 else ("negative" if impact < 0 else "neutral")
+                    })
+        else:
+            # Fallback for tree-based models using general importance weights
+            pred = self.predict_expected_rating(features)
+            for imp in self.feature_importances:
+                explanations.append({
+                    "feature": imp["feature"],
+                    "value": round(float(features.get(imp["feature"], DEFAULT_FEATURE_VALUES.get(imp["feature"], 0.0))), 2),
+                    "point_impact": round(imp["weight"] * 0.1, 3),
+                    "direction": imp["direction"]
+                })
+
+        # Sort by absolute impact descending
+        explanations.sort(key=lambda x: abs(x.get("point_impact", 0.0)), reverse=True)
+        return explanations
 
     def calculate_residual(
         self,
@@ -193,9 +257,37 @@ class QuantResidualModel:
 
         return {
             "actual_rating": round(actual_rating, 2),
-            "expected_rating": expected_rating,
-            "residual": residual,
+            "expected_rating": round(expected_rating, 2),
+            "residual": round(residual, 2),
             "anomaly_type": anomaly_type,
             "anomaly_severity": round(abs(residual), 2),
             "description": description
         }
+
+    def save(self, file_path: str) -> None:
+        """Serialize trained model and metadata to disk."""
+        import joblib
+        p = Path(file_path).resolve()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        joblib.dump({
+            "model_type": self.model_type,
+            "feature_names": self.feature_names,
+            "pipeline": self.pipeline,
+            "metrics": self.metrics,
+            "feature_importances": self.feature_importances
+        }, p)
+
+    @classmethod
+    def load(cls, file_path: str) -> "QuantResidualModel":
+        """Load serialized model from disk."""
+        import joblib
+        p = Path(file_path).resolve()
+        if not p.exists():
+            raise FileNotFoundError(f"Model file not found: {file_path}")
+        data = joblib.load(p)
+        inst = cls(model_type=data["model_type"])
+        inst.feature_names = data["feature_names"]
+        inst.pipeline = data["pipeline"]
+        inst.metrics = data["metrics"]
+        inst.feature_importances = data["feature_importances"]
+        return inst

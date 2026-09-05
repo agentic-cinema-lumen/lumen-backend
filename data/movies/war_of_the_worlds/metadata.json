@@ -1,0 +1,42 @@
+{
+  "title": "War of the Worlds",
+  "href": "War of the Worlds Script.html",
+  "imdb_id": "tt0407304",
+  "imdb_rating": 6.5,
+  "votes": 409066,
+  "genre": "Adventure, Sci-Fi, Thriller",
+  "year": 2005,
+  "director": "Steven Spielberg",
+  "duration": 116.0,
+  "description": "As Earth is invaded by alien tripod fighting machines, one family fights for survival in this sci-fi action film.",
+  "filmgrab_url": "https://film-grab.com/2019/11/19/war-of-the-worlds/",
+  "filmgrab_slug": "war-of-the-worlds",
+  "primary_bucket": "Sci-Fi",
+  "slug": "war_of_the_worlds",
+  "has_script": true,
+  "has_real_stills": true,
+  "real_stills_count": 6,
+  "script_metrics": {
+    "title": "War of the Worlds",
+    "total_scenes": 34,
+    "total_words": 16567,
+    "dialogue_words": 0,
+    "action_words": 16567,
+    "dialogue_ratio": 0.0,
+    "estimated_duration_min": 110.4,
+    "estimated_duration_sec": 6626.8,
+    "estimated_total_shots": 1733,
+    "cuts_per_minute": 15.69,
+    "words_per_minute": 0.0,
+    "climax_acceleration": 0.524,
+    "characters_count": 0,
+    "characters": []
+  },
+  "cv_metrics": {
+    "mean_luminance": 69.24,
+    "luminance_std": 55.31,
+    "mean_contrast": 45.41,
+    "dark_frame_ratio": 0.5,
+    "severe_darkness_penalty": 2.5
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "title": "Alien",
+  "href": "Alien Script.html",
+  "imdb_id": "tt0078748",
+  "imdb_rating": 8.4,
+  "votes": 768874,
+  "genre": "Horror, Sci-Fi",
+  "year": 1979,
+  "director": "Ridley Scott",
+  "duration": 117.0,
+  "description": "After a space merchant vessel receives an unknown transmission as a distress call, one of the crew is attacked by a mysterious life form and they soon realize that its life cycle has merely begun.",
+  "filmgrab_url": "https://film-grab.com/2013/07/24/alien/",
+  "filmgrab_slug": "alien",
+  "primary_bucket": "Sci-Fi",
+  "slug": "alien",
+  "has_script": true,
+  "has_real_stills": true,
+  "real_stills_count": 6,
+  "script_metrics": {
+    "title": "Alien",
+    "total_scenes": 1,
+    "total_words": 501,
+    "dialogue_words": 0,
+    "action_words": 501,
+    "dialogue_ratio": 0.0,
+    "estimated_duration_min": 3.3,
+    "estimated_duration_sec": 200.4,
+    "estimated_total_shots": 52,
+    "cuts_per_minute": 15.57,
+    "words_per_minute": 0.0,
+    "climax_acceleration": 1.0,
+    "characters_count": 0,
+    "characters": []
+  },
+  "cv_metrics": {
+    "mean_luminance": 24.43,
+    "luminance_std": 12.21,
+    "mean_contrast": 23.55,
+    "dark_frame_ratio": 0.9,
+    "severe_darkness_penalty": 8.1
+  }
+}

@@ -89,7 +89,7 @@ class PreMortemAgent:
             "season_position": season_position,
             "is_premiere": 1.0 if season_position <= 0.1 else 0.0,
             "is_finale": 1.0 if is_finale or season_position >= 0.9 else 0.0,
-            "log_votes": 10.5
+            "log_votes": 5.0  # Log10 baseline (~100k votes for wide theatrical release)
         }
 
         # 4. Quant Residual Prediction

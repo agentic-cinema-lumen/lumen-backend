@@ -1,0 +1,44 @@
+{
+  "title": "Aladdin",
+  "href": "Aladdin Script.html",
+  "imdb_id": "tt0103639",
+  "imdb_rating": 8.0,
+  "votes": 363761,
+  "genre": "Animation, Adventure, Comedy",
+  "year": 1992,
+  "director": "Ron Clements, John Musker",
+  "duration": 90.0,
+  "description": "A kindhearted street urchin and a power-hungry Grand Vizier vie for a magic lamp that has the power to make their deepest wishes come true.",
+  "filmgrab_url": "https://film-grab.com/2025/08/22/aladdin/",
+  "filmgrab_slug": "aladdin",
+  "primary_bucket": "Comedy",
+  "slug": "aladdin",
+  "has_script": true,
+  "has_real_stills": true,
+  "real_stills_count": 6,
+  "script_metrics": {
+    "title": "Aladdin",
+    "total_scenes": 1,
+    "total_words": 17165,
+    "dialogue_words": 8,
+    "action_words": 17157,
+    "dialogue_ratio": 0.0,
+    "estimated_duration_min": 114.4,
+    "estimated_duration_sec": 6866.5,
+    "estimated_total_shots": 1806,
+    "cuts_per_minute": 15.78,
+    "words_per_minute": 0.1,
+    "climax_acceleration": 1.0,
+    "characters_count": 1,
+    "characters": [
+      "COMPILED BY BEN SCRIPPS"
+    ]
+  },
+  "cv_metrics": {
+    "mean_luminance": 109.24,
+    "luminance_std": 57.91,
+    "mean_contrast": 30.29,
+    "dark_frame_ratio": 0.2,
+    "severe_darkness_penalty": 0.4
+  }
+}

@@ -28,7 +28,7 @@ class LLMClient:
 
         if self.gemini_key and not self.force_mock:
             self.provider = "gemini"
-            self.model = model or "gemini-2.0-flash"
+            self.model = model or "gemini-3.6-flash"
         elif self.openai_key and not self.force_mock:
             self.provider = "openai"
             self.model = model or "gpt-4o-mini"

@@ -1,0 +1,62 @@
+{
+  "movie_title": "Jurassic Park",
+  "slug": "jurassic_park",
+  "filmgrab_url": "https://film-grab.com/2015/05/11/jurassic-park/",
+  "total_shots": 6,
+  "shots": [
+    {
+      "shot_id": "shot_0001",
+      "shot_index": 1,
+      "keyframe_file": "shot_0001.jpg",
+      "timeline_pct": 0.0,
+      "narrative_beat": "Opening Tone & Visual Establishment",
+      "gallery_frame_index": 0,
+      "source_url": "https://film-grab.com/wp-content/uploads/photo-gallery/01 (542).jpg?bwg=1547224757"
+    },
+    {
+      "shot_id": "shot_0002",
+      "shot_index": 2,
+      "keyframe_file": "shot_0002.jpg",
+      "timeline_pct": 0.2,
+      "narrative_beat": "Inciting Incident & Act I Break",
+      "gallery_frame_index": 13,
+      "source_url": "https://film-grab.com/wp-content/uploads/photo-gallery/12 (552).jpg?bwg=1547224757"
+    },
+    {
+      "shot_id": "shot_0003",
+      "shot_index": 3,
+      "keyframe_file": "shot_0003.jpg",
+      "timeline_pct": 0.39,
+      "narrative_beat": "Rising Action & Midpoint Build",
+      "gallery_frame_index": 26,
+      "source_url": "https://film-grab.com/wp-content/uploads/photo-gallery/25 (552).jpg?bwg=1547224758"
+    },
+    {
+      "shot_id": "shot_0004",
+      "shot_index": 4,
+      "keyframe_file": "shot_0004.jpg",
+      "timeline_pct": 0.61,
+      "narrative_beat": "Midpoint Reversal & Dark Night Crisis",
+      "gallery_frame_index": 40,
+      "source_url": "https://film-grab.com/wp-content/uploads/photo-gallery/39 (549).jpg?bwg=1547224757"
+    },
+    {
+      "shot_id": "shot_0005",
+      "shot_index": 5,
+      "keyframe_file": "shot_0005.jpg",
+      "timeline_pct": 0.8,
+      "narrative_beat": "Climax Confrontation & Peak Action",
+      "gallery_frame_index": 53,
+      "source_url": "https://film-grab.com/wp-content/uploads/photo-gallery/52 (525).jpg?bwg=1547224757"
+    },
+    {
+      "shot_id": "shot_0006",
+      "shot_index": 6,
+      "keyframe_file": "shot_0006.jpg",
+      "timeline_pct": 1.0,
+      "narrative_beat": "Resolution & Final Frame",
+      "gallery_frame_index": 66,
+      "source_url": "https://film-grab.com/wp-content/uploads/photo-gallery/65 (374).jpg?bwg=1547224757"
+    }
+  ]
+}

@@ -5,7 +5,7 @@ Parses screenplays (standard format, .fountain, or plain text) and pitch logline
 1. Scene breakdown and narrative tempo
 2. Dialogue velocity (WPM), character line distribution, action-to-dialogue ratios
 3. Climax acceleration (tempo progression across acts)
-4. Synthetic episode feature representations compatible with the Quant ML residual engine
+4. Pre-production craft feature representations compatible with the Quant ML residual engine
 """
 
 import re

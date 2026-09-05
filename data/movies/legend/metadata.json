@@ -1,0 +1,47 @@
+{
+  "title": "Legend",
+  "href": "Legend Script.html",
+  "imdb_id": "tt0089469",
+  "imdb_rating": 6.5,
+  "votes": 58567,
+  "genre": "Adventure, Fantasy, Romance",
+  "year": 1985,
+  "director": "Ridley Scott",
+  "duration": 94.0,
+  "description": "A young man must stop the Lord of Darkness from destroying daylight and marrying the woman he loves.",
+  "filmgrab_url": "https://film-grab.com/2023/11/21/legend/",
+  "filmgrab_slug": "legend",
+  "primary_bucket": "Adventure",
+  "slug": "legend",
+  "has_script": true,
+  "has_real_stills": true,
+  "real_stills_count": 6,
+  "script_metrics": {
+    "title": "Legend",
+    "total_scenes": 1,
+    "total_words": 25561,
+    "dialogue_words": 76,
+    "action_words": 25485,
+    "dialogue_ratio": 0.003,
+    "estimated_duration_min": 170.5,
+    "estimated_duration_sec": 10229.0,
+    "estimated_total_shots": 2691,
+    "cuts_per_minute": 15.78,
+    "words_per_minute": 0.4,
+    "climax_acceleration": 1.0,
+    "characters_count": 4,
+    "characters": [
+      "101C INTERIOR KITCHEN DAY",
+      "128 EXTERIOR RING POND DAY",
+      "7C EXTERIOR BOG NIGHT",
+      "LEGEND"
+    ]
+  },
+  "cv_metrics": {
+    "mean_luminance": 41.93,
+    "luminance_std": 12.22,
+    "mean_contrast": 39.29,
+    "dark_frame_ratio": 0.5,
+    "severe_darkness_penalty": 2.5
+  }
+}

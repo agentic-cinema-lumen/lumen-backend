@@ -1,0 +1,62 @@
+{
+  "movie_title": "Sleepy Hollow",
+  "slug": "sleepy_hollow",
+  "filmgrab_url": "https://film-grab.com/2016/05/10/sleepy-hollow/",
+  "total_shots": 6,
+  "shots": [
+    {
+      "shot_id": "shot_0001",
+      "shot_index": 1,
+      "keyframe_file": "shot_0001.jpg",
+      "timeline_pct": 0.0,
+      "narrative_beat": "Opening Tone & Visual Establishment",
+      "gallery_frame_index": 0,
+      "source_url": "https://film-grab.com/wp-content/uploads/photo-gallery/imported_from_media_libray/0110.jpg?bwg=1547049940"
+    },
+    {
+      "shot_id": "shot_0002",
+      "shot_index": 2,
+      "keyframe_file": "shot_0002.jpg",
+      "timeline_pct": 0.2,
+      "narrative_beat": "Inciting Incident & Act I Break",
+      "gallery_frame_index": 13,
+      "source_url": "https://film-grab.com/wp-content/uploads/photo-gallery/imported_from_media_libray/1210.jpg?bwg=1547049940"
+    },
+    {
+      "shot_id": "shot_0003",
+      "shot_index": 3,
+      "keyframe_file": "shot_0003.jpg",
+      "timeline_pct": 0.39,
+      "narrative_beat": "Rising Action & Midpoint Build",
+      "gallery_frame_index": 26,
+      "source_url": "https://film-grab.com/wp-content/uploads/photo-gallery/imported_from_media_libray/2510.jpg?bwg=1547049938"
+    },
+    {
+      "shot_id": "shot_0004",
+      "shot_index": 4,
+      "keyframe_file": "shot_0004.jpg",
+      "timeline_pct": 0.61,
+      "narrative_beat": "Midpoint Reversal & Dark Night Crisis",
+      "gallery_frame_index": 40,
+      "source_url": "https://film-grab.com/wp-content/uploads/photo-gallery/imported_from_media_libray/3910.jpg?bwg=1547049938"
+    },
+    {
+      "shot_id": "shot_0005",
+      "shot_index": 5,
+      "keyframe_file": "shot_0005.jpg",
+      "timeline_pct": 0.8,
+      "narrative_beat": "Climax Confrontation & Peak Action",
+      "gallery_frame_index": 53,
+      "source_url": "https://film-grab.com/wp-content/uploads/photo-gallery/imported_from_media_libray/529.jpg?bwg=1547049938"
+    },
+    {
+      "shot_id": "shot_0006",
+      "shot_index": 6,
+      "keyframe_file": "shot_0006.jpg",
+      "timeline_pct": 1.0,
+      "narrative_beat": "Resolution & Final Frame",
+      "gallery_frame_index": 66,
+      "source_url": "https://film-grab.com/wp-content/uploads/photo-gallery/imported_from_media_libray/654.jpg?bwg=1547049938"
+    }
+  ]
+}

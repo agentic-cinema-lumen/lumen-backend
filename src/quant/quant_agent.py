@@ -28,6 +28,14 @@ class QuantAgent:
         self.model_comparison: List[Dict[str, Any]] = []
         self.agent_insights: List[str] = []
 
+        # Auto-load pre-trained champion model for instant (<1ms) inference
+        model_file = Path(self.data_root) / "models" / "champion_model.joblib"
+        if model_file.exists():
+            try:
+                self.champion_model = QuantResidualModel.load(str(model_file))
+            except Exception:
+                self.champion_model = None
+
     def run_training_loop(self, exclude_target: Optional[str] = None) -> Dict[str, Any]:
         """
         Execute the autonomous agent model selection and training loop.
@@ -62,6 +70,12 @@ class QuantAgent:
         self.champion_model = trained_models[best_candidate["model_type"]]
         self.model_comparison = comparison
         print(f"🏆 [QuantAgent] Champion selected: '{best_candidate['model_type']}' (CV R²: {best_candidate['cv_r2']})")
+
+        # Persist champion model artifact
+        try:
+            self.champion_model.save(str(Path(self.data_root) / "models" / "champion_model.joblib"))
+        except Exception:
+            pass
 
         # Synthesize Craft Insights
         self._synthesize_insights()

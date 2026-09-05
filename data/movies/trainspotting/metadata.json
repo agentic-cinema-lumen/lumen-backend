@@ -1,0 +1,51 @@
+{
+  "title": "Trainspotting",
+  "href": "Trainspotting Script.html",
+  "imdb_id": "tt0117951",
+  "imdb_rating": 8.1,
+  "votes": 623437,
+  "genre": "Drama",
+  "year": 1996,
+  "director": "Danny Boyle",
+  "duration": 93.0,
+  "description": "Renton, deeply immersed in the Edinburgh drug scene, tries to clean up and get out, despite the allure of the drugs and influence of friends.",
+  "filmgrab_url": "https://film-grab.com/2013/12/13/trainspotting/",
+  "filmgrab_slug": "trainspotting",
+  "slug": "trainspotting",
+  "has_script": true,
+  "has_real_stills": true,
+  "real_stills_count": 6,
+  "script_metrics": {
+    "title": "Trainspotting",
+    "total_scenes": 190,
+    "total_words": 16380,
+    "dialogue_words": 401,
+    "action_words": 15979,
+    "dialogue_ratio": 0.024,
+    "estimated_duration_min": 110.2,
+    "estimated_duration_sec": 6610.0,
+    "estimated_total_shots": 1707,
+    "cuts_per_minute": 15.49,
+    "words_per_minute": 3.6,
+    "climax_acceleration": 1.047,
+    "characters_count": 9,
+    "characters": [
+      "BEGBIE",
+      "DIANE",
+      "GAV",
+      "MOTHER",
+      "RENTON",
+      "SICK BOY",
+      "SPUD",
+      "SWANNEY",
+      "TOMMY"
+    ]
+  },
+  "cv_metrics": {
+    "mean_luminance": 59.87,
+    "luminance_std": 29.63,
+    "mean_contrast": 21.22,
+    "dark_frame_ratio": 0.2,
+    "severe_darkness_penalty": 0.4
+  }
+}

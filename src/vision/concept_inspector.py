@@ -113,6 +113,7 @@ class ConceptInspector:
             "image_count": len(paths),
             "mean_luminance": round(mean_lum, 2),
             "luminance_std": round(lum_std, 2),
+            "mean_contrast": round(float(np.mean(contrasts)), 2) if contrasts else 45.0,
             "dark_frame_ratio": round(dark_frame_ratio, 3),
             "severe_darkness_penalty": round(severe_darkness_penalty, 3),
             "visual_style_summary": visual_summary,

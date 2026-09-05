@@ -1,0 +1,62 @@
+{
+  "movie_title": "Avengers: Endgame",
+  "slug": "avengers_endgame",
+  "filmgrab_url": "https://film-grab.com/2020/02/17/avengers-endgame/",
+  "total_shots": 6,
+  "shots": [
+    {
+      "shot_id": "shot_0001",
+      "shot_index": 1,
+      "keyframe_file": "shot_0001.jpg",
+      "timeline_pct": 0.0,
+      "narrative_beat": "Opening Tone & Visual Establishment",
+      "gallery_frame_index": 0,
+      "source_url": "https://film-grab.com/wp-content/uploads/photo-gallery/Avengers_Endgame_001.jpg?bwg=1569515968"
+    },
+    {
+      "shot_id": "shot_0002",
+      "shot_index": 2,
+      "keyframe_file": "shot_0002.jpg",
+      "timeline_pct": 0.19,
+      "narrative_beat": "Inciting Incident & Act I Break",
+      "gallery_frame_index": 11,
+      "source_url": "https://film-grab.com/wp-content/uploads/photo-gallery/Avengers_Endgame_010.jpg?bwg=1569515968"
+    },
+    {
+      "shot_id": "shot_0003",
+      "shot_index": 3,
+      "keyframe_file": "shot_0003.jpg",
+      "timeline_pct": 0.4,
+      "narrative_beat": "Rising Action & Midpoint Build",
+      "gallery_frame_index": 23,
+      "source_url": "https://film-grab.com/wp-content/uploads/photo-gallery/Avengers_Endgame_022.jpg?bwg=1569515968"
+    },
+    {
+      "shot_id": "shot_0004",
+      "shot_index": 4,
+      "keyframe_file": "shot_0004.jpg",
+      "timeline_pct": 0.6,
+      "narrative_beat": "Midpoint Reversal & Dark Night Crisis",
+      "gallery_frame_index": 34,
+      "source_url": "https://film-grab.com/wp-content/uploads/photo-gallery/Avengers_Endgame_033.jpg?bwg=1569515968"
+    },
+    {
+      "shot_id": "shot_0005",
+      "shot_index": 5,
+      "keyframe_file": "shot_0005.jpg",
+      "timeline_pct": 0.81,
+      "narrative_beat": "Climax Confrontation & Peak Action",
+      "gallery_frame_index": 46,
+      "source_url": "https://film-grab.com/wp-content/uploads/photo-gallery/Avengers_Endgame_045.jpg?bwg=1569515968"
+    },
+    {
+      "shot_id": "shot_0006",
+      "shot_index": 6,
+      "keyframe_file": "shot_0006.jpg",
+      "timeline_pct": 1.0,
+      "narrative_beat": "Resolution & Final Frame",
+      "gallery_frame_index": 57,
+      "source_url": "https://film-grab.com/wp-content/uploads/photo-gallery/Avengers_Endgame_056.jpg?bwg=1569515971"
+    }
+  ]
+}

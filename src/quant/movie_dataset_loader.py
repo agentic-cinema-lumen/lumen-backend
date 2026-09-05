@@ -33,7 +33,16 @@ class MovieDatasetLoader:
     def __init__(self, data_dir: str = "data", min_votes: int = 1000):
         self.data_dir = Path(data_dir).resolve()
         self.movies_csv = self.data_dir / "IMDb movies.csv"
+        if not self.movies_csv.exists():
+            alt_m = self.data_dir / "imdb_data" / "IMDb movies.csv"
+            if alt_m.exists():
+                self.movies_csv = alt_m
+
         self.ratings_csv = self.data_dir / "IMDb ratings.csv"
+        if not self.ratings_csv.exists():
+            alt_r = self.data_dir / "imdb_data" / "IMDb ratings.csv"
+            if alt_r.exists():
+                self.ratings_csv = alt_r
         self.min_votes = min_votes
 
         self.df: Optional[pd.DataFrame] = None
