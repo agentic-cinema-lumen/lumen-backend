@@ -32,7 +32,7 @@ def run_cli():
     parser.add_argument("--script", type=str, help="Path to screenplay (.txt, .fountain)")
     parser.add_argument("--logline", type=str, help="Pitch logline (2-4 sentences)")
     parser.add_argument("--pitch-file", type=str, help="Path to pitch JSON file containing logline and metadata")
-    parser.add_argument("--keyframes", type=str, default="data/space/keyframes", help="Directory or path with keyframe images")
+    parser.add_argument("--keyframes", type=str, default="data/movies/alien/keyframes", help="Directory or path with keyframe images")
     parser.add_argument("--title", type=str, default="Untitled Project", help="Title of script or concept")
     parser.add_argument("--show", type=str, default="Prestige Series", help="Parent show name (for scripts)")
     parser.add_argument("--export", type=str, help="Optional output JSON file path for report")

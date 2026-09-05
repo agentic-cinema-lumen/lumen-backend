@@ -122,10 +122,10 @@ Calling `oracle.predict_craft(...)` returns:
 ### Screenplay + Keyframes Directory
 ```python
 result = oracle.predict_from_script_and_keyframes(
-    script_path_or_text="data/sample_scripts/the_long_night_sample.txt",
-    keyframes_path_or_dir="data/space/keyframes",
-    genre="Fantasy / Action",
-    title="The Long Night"
+    script_path_or_text="data/movies/alien/script.txt",
+    keyframes_path_or_dir="data/movies/alien/keyframes",
+    genre="Horror, Sci-Fi",
+    title="Alien"
 )
 ```
 

@@ -17,15 +17,15 @@ class TestPreMortemAgent(unittest.TestCase):
         self.agent.trope_sleuth.client = search_client
 
     def test_run_script_premortem(self):
-        script_file = "data/sample_scripts/the_long_night_sample.txt"
-        keyframes_dir = "data/space/keyframes"
+        script_file = "data/movies/alien/script.txt"
+        keyframes_dir = "data/movies/alien/keyframes"
 
         report = self.agent.run_script_premortem(
             script_path_or_text=script_file,
             keyframes_path_or_dir=keyframes_dir,
-            title="The Long Night Sample",
-            show_name="Game of Thrones",
-            show_historical_mean=8.9
+            title="Alien",
+            show_name="Alien Franchise",
+            show_historical_mean=8.4
         )
 
         self.assertEqual(report["mode"], "script_premortem")
@@ -37,7 +37,7 @@ class TestPreMortemAgent(unittest.TestCase):
 
     def test_run_premise_premortem(self):
         logline = "In a subterranean lunar courtroom, an accused rebel officer faces execution while the jury oxygen levels deplete."
-        keyframes_dir = "data/space/keyframes"
+        keyframes_dir = "data/movies/alien/keyframes"
 
         report = self.agent.run_premise_premortem(
             logline=logline,

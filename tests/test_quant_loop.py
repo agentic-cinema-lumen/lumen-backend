@@ -25,13 +25,22 @@ class TestQuantResidualEngine(unittest.TestCase):
 
     def setUp(self):
         self.root_dir = Path(__file__).resolve().parent.parent
-        self.space_features = self.root_dir / "data" / "space" / "episode_features.json"
-        self.space_keyframe = self.root_dir / "data" / "space" / "keyframes" / "shot_0001.jpg"
+        self.alien_keyframe = self.root_dir / "data" / "movies" / "alien" / "keyframes" / "shot_0001.jpg"
 
     def test_01_feature_extractor_from_local_data(self):
-        """Verify feature extractor correctly computes craft metrics from ingestion files."""
-        self.assertTrue(self.space_features.exists(), "Sample space episode_features.json must exist")
-        features = extract_from_file(str(self.space_features))
+        """Verify feature extractor correctly computes craft metrics from shot sequence."""
+        from src.quant.feature_extractor import extract_features_from_episode
+        sample_data = {
+            "episode_id": "test_sequence",
+            "show_name": "Cinema Benchmark",
+            "total_duration_sec": 180.0,
+            "shots": [
+                {"duration_sec": 3.5, "dialogue": "Are you reading this signal?", "dialogue_lines": ["Line 1"]},
+                {"duration_sec": 4.0, "dialogue": "Yes, it is approaching rapidly.", "dialogue_lines": ["Line 2"]},
+                {"duration_sec": 2.5, "dialogue": "", "dialogue_lines": []}
+            ]
+        }
+        features = extract_features_from_episode(sample_data)
 
         # Check required craft features are extracted
         for col in FEATURE_COLUMNS:
@@ -46,8 +55,8 @@ class TestQuantResidualEngine(unittest.TestCase):
 
     def test_02_keyframe_luminance_calculation(self):
         """Verify real image luminance calculation on actual keyframe."""
-        if self.space_keyframe.exists():
-            lum = calculate_image_luminance(self.space_keyframe)
+        if self.alien_keyframe.exists():
+            lum = calculate_image_luminance(self.alien_keyframe)
             self.assertIsNotNone(lum)
             self.assertGreater(lum, 0.0)
             self.assertLess(lum, 255.0)
@@ -117,14 +126,14 @@ class TestQuantResidualEngine(unittest.TestCase):
         """Verify the multi-round autonomous agentic ML engineer loop."""
         from src.quant.agentic_trainer import AgenticQuantTrainer
         trainer = AgenticQuantTrainer(data_root=str(self.root_dir / "data"), force_mock=True, max_rounds=1)
-        summary = trainer.run_agentic_loop(exclude_target="space")
+        summary = trainer.run_agentic_loop(exclude_target="movie_alien")
 
         self.assertIsNotNone(summary["champion_model"])
         self.assertGreater(summary["final_feature_count"], len(FEATURE_COLUMNS))
         self.assertGreater(len(summary["craft_theory"]), 20)
 
         # Test evaluating an episode
-        res = trainer.evaluate_episode("space", actual_rating=8.5)
+        res = trainer.evaluate_episode("movie_alien", actual_rating=8.4)
         self.assertIn("quant_evaluation", res)
         self.assertIn("residual", res["quant_evaluation"])
 
