@@ -1,0 +1,61 @@
+{
+  "mode": "premise_greenlight_compass",
+  "title": "Lunar Justice",
+  "logline": "In a claustrophobic subterranean lunar prison, an idealistic defense lawyer must navigate conspiracy and paranoia during a high-stakes murder trial before oxygen reserves run out.",
+  "genre": "Sci-Fi Thriller",
+  "detected_tone": "Claustrophobic & Dark",
+  "projected_rating_potential": {
+    "ceiling": 8.8,
+    "floor": 6.8,
+    "median_target": 8.1
+  },
+  "style_premise_cohesion": {
+    "rating": "BALANCED",
+    "evaluation": "Solid baseline aesthetic alignment.",
+    "mean_luminance": 74.26,
+    "dark_frame_ratio": 0.0
+  },
+  "make_or_break_dependencies": [
+    "Requires dialogue velocity > 95 WPM to maintain dramatic tension.",
+    "Visual composition must prioritize character face readability over shadow obscurity.",
+    "Avoid common third-act trope fatigue flagged in community audience discussions."
+  ],
+  "audience_fatigue_radar": {
+    "queries_executed": [
+      "site:reddit.com/r/television \"Sci-Fi Thriller\" \"clich\u00e9\" OR \"overdone\" tropes to avoid",
+      "site:reddit.com/r/television \"Sci-Fi Thriller\" \"what makes a great\" pitch OR pilot",
+      "site:reddit.com/r/television \"Claustrophobic & Dark\" \"audience fatigue\" review discussion"
+    ],
+    "audience_consensus_claims": [
+      {
+        "category": "Pacing",
+        "valence": "positive",
+        "claim": "Sudden pacing spikes in the third act without adequate narrative setup create severe emotional disconnect.",
+        "evidence": "Top thread: High-concept sci-fi on a single set (like lunar stations or bunker trials) only works if the legal arguments and character betrayals are razor sharp (like Star Trek's M",
+        "source": "https://www.reddit.com/r/scifi/comments/chamber_scifi_tropes/"
+      },
+      {
+        "category": "Plot Logic",
+        "valence": "positive",
+        "claim": "Single-location or chamber episodes require high dialogue density and razor-sharp ideological conflict to hold viewer attention.",
+        "evidence": "Top thread: High-concept sci-fi on a single set (like lunar stations or bunker trials) only works if the legal arguments and character betrayals are razor sharp (like Star Trek's M",
+        "source": "https://www.reddit.com/r/scifi/comments/chamber_scifi_tropes/"
+      },
+      {
+        "category": "Plot Logic",
+        "valence": "negative",
+        "claim": "Single-location or chamber episodes require high dialogue density and razor-sharp ideological conflict to hold viewer attention.",
+        "evidence": "Audience testing consistently shows that high-concept courtroom or survival pitches fail when the visual world is grim and monochrome unless there is a charismatic protagonist driv",
+        "source": "https://www.hollywoodreporter.com/tv/tv-features/greenlighting-prestige-pitches/"
+      },
+      {
+        "category": "Pacing",
+        "valence": "positive",
+        "claim": "Sudden pacing spikes in the third act without adequate narrative setup create severe emotional disconnect.",
+        "evidence": "Top thread: High-concept sci-fi on a single set (like lunar stations or bunker trials) only works if the legal arguments and character betrayals are razor sharp (like Star Trek's M",
+        "source": "https://www.reddit.com/r/scifi/comments/chamber_scifi_tropes/"
+      }
+    ]
+  },
+  "greenlight_verdict": "GREENLIGHT CONDITIONAL: High potential in Sci-Fi Thriller, provided screenwriting adheres to high-tempo verbal confrontation to offset claustrophobic visual styling."
+}
