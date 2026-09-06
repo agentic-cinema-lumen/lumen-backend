@@ -53,6 +53,9 @@ class ParallelSearchClient:
                     # `_mock` is written into the cached payload, so a cache hit
                     # on a mocked result still reports itself as mocked. Without
                     # it, replaying the cache silently launders canned output.
+                    # ponytail: `is_degraded` mirrors `_mock` so callers written
+                    # against either convention read the same fact.
+                    cached_data["is_degraded"] = bool(cached_data.get("_mock", True))
                     return cached_data
             except Exception:
                 pass
@@ -62,6 +65,7 @@ class ParallelSearchClient:
                 data = self._call_live_parallel_api(query, num_results)
                 data["_source"] = "parallel_api"
                 data["_mock"] = False
+                data["is_degraded"] = False
                 # Cache response
                 with open(cache_file, "w", encoding="utf-8") as f:
                     json.dump(data, f, indent=2)
@@ -73,6 +77,7 @@ class ParallelSearchClient:
         mock_data = self._generate_smart_mock_results(query, num_results)
         mock_data["_source"] = "smart_mock"
         mock_data["_mock"] = True
+        mock_data["is_degraded"] = True
         try:
             with open(cache_file, "w", encoding="utf-8") as f:
                 json.dump(mock_data, f, indent=2)

@@ -55,43 +55,62 @@ class QuantOracle:
         agent.run_training_loop()
         self.model = agent.champion_model
 
-    # Last-resort fallback only: empirical IMDb genre expectations across 29,374
-    # feature films. This is a *different population* to the 100-film training
-    # corpus, so using it at serving time biases every craft residual upward.
-    # get_genre_baseline() prefers the corpus prior; this is used only when the
-    # training manifest is unavailable.
+    # Last-resort fallback only, used when the training manifest is unavailable
+    # (e.g. a bare deployment). Corpus-centred means over the 100-film benchmark
+    # corpus, so the fallback and the corpus prior describe the same population.
+    # get_genre_baseline() always prefers the corpus-derived prior.
     GENRE_PRIORS: Dict[str, float] = {
-        "drama": 6.64,
-        "sci-fi": 5.63,
-        "action": 6.08,
-        "comedy": 6.26,
-        "horror": 5.44,
-        "thriller": 6.03,
-        "crime": 6.45,
-        "adventure": 6.21,
-        "romance": 6.50,
-        "mystery": 6.23,
-        "biography": 6.88,
-        "war": 6.92,
-        "animation": 6.72,
-        "fantasy": 6.08,
-        "western": 6.60
+        "drama": 8.13,
+        "adventure": 7.76,
+        "thriller": 7.56,
+        "action": 7.77,
+        "sci-fi": 7.72,
+        "crime": 7.56,
+        "mystery": 7.63,
+        "comedy": 7.72,
+        "horror": 7.12,
+        "romance": 7.87,
+        "fantasy": 7.31,
+        "biography": 8.30,
+        "animation": 8.10,
+        "war": 8.43,
+        "history": 8.43,
+        "family": 7.90,
+        "music": 8.25,
+        "western": 8.40,
+        "film-noir": 7.90
     }
+    CORPUS_DEFAULT_RATING: float = 7.80
 
-    def get_genre_baseline(self, genre: Optional[str]) -> float:
-        """Genre prior from the training corpus, so training and serving agree."""
+    @classmethod
+    def get_genre_baseline_static(cls, genre: Optional[str], data_root: str = "data") -> float:
+        """Genre prior without an initialized instance.
+
+        Prefers the corpus-derived prior, exactly as get_genre_baseline() does.
+        Falls back to the GENRE_PRIORS table only when no training manifest is
+        on disk.
+        """
         from src.quant.benchmark_dataset import get_corpus_genre_priors, genre_prior
-        priors = get_corpus_genre_priors(str(self.data_root / "movies"))
+        priors = get_corpus_genre_priors(str(Path(data_root) / "movies"))
         if priors["counts"]:
             return genre_prior(genre, priors)
 
-        # Fallback: no training manifest on disk (e.g. a bare deployment).
         if not genre:
-            return 6.33
+            return cls.CORPUS_DEFAULT_RATING
         g_clean = str(genre).lower().strip()
+        if g_clean in cls.GENRE_PRIORS:
+            return cls.GENRE_PRIORS[g_clean]
+
+        # Compound genres, e.g. "Horror, Sci-Fi" or "Action / Adventure".
         subparts = [p.strip() for p in g_clean.replace('/', ',').split(',') if p.strip()]
-        matched = [self.GENRE_PRIORS[p] for p in subparts if p in self.GENRE_PRIORS]
-        return round(float(sum(matched) / len(matched)), 2) if matched else 6.33
+        matched = [cls.GENRE_PRIORS[p] for p in subparts if p in cls.GENRE_PRIORS]
+        if matched:
+            return round(float(sum(matched) / len(matched)), 2)
+        return cls.CORPUS_DEFAULT_RATING
+
+    def get_genre_baseline(self, genre: Optional[str]) -> float:
+        """Genre prior from the training corpus, so training and serving agree."""
+        return self.get_genre_baseline_static(genre, data_root=str(self.data_root))
 
     def predict_craft(
         self,

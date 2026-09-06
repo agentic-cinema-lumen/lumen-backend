@@ -50,7 +50,7 @@ DEFAULT_FEATURE_VALUES: Dict[str, float] = {
     "mean_luminance": 65.0,
     "luminance_std": 30.0,
     "dark_frame_ratio": 0.30,
-    "show_historical_mean": 6.33
+    "show_historical_mean": 7.80
 }
 
 
