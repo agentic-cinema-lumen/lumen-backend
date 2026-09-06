@@ -178,6 +178,66 @@ def test_failed_llm_call_degrades_instead_of_raising():
     assert any("429" in r for r in out["degradation_reasons"])
 
 
+def test_zero_claims_is_disclosed_as_a_degradation_reason():
+    """The observed defect: the agent searched, answered with `claims: []`, said nothing."""
+    def invoke(prompt, tool):
+        tool("q")
+        return [ResearchOutput(inferred_genre="Thriller", queries_executed=["q"], claims=[])]
+
+    out = _agent(_StubSearch(SEARCH_RESULTS["results"]), invoke).run(
+        premise="x", risk_flags=[]
+    )
+    assert out["claims"] == []
+    assert out["degraded"]
+    assert any("no claims" in r for r in out["degradation_reasons"]), \
+        out["degradation_reasons"]
+
+
+def test_all_claims_dropped_by_grounding_is_degraded_with_counts():
+    """Losing every claim to the filter is a degradation, and the counts must say so."""
+    def invoke(prompt, tool):
+        tool("q")  # retrieves text that none of the fixture claims cite
+        return [ResearchOutput(**AGENT_OUTPUT)]
+
+    proposed = len(AGENT_OUTPUT["claims"])
+    out = _agent(_StubSearch([{"url": "https://elsewhere.example.com/a",
+                               "text": "unrelated text"}]), invoke).run(
+        premise="x", risk_flags=[]
+    )
+    assert out["claims"] == []
+    assert out["degraded"]
+    counts = next(r for r in out["degradation_reasons"] if "grounding filter" in r)
+    assert f"{proposed} of {proposed}" in counts, counts
+
+
+def test_a_partial_drop_is_not_a_degradation():
+    """One ungrounded claim among several is the filter working, not a broken run."""
+    def invoke(prompt, tool):
+        tool("q")
+        out = ResearchOutput(**AGENT_OUTPUT)
+        extra = out.claims[0].model_copy(update={"source_url": "https://invented.example/x"})
+        out.claims = out.claims + [extra]
+        return [out]
+
+    out = _agent(_StubSearch(SEARCH_RESULTS["results"]), invoke).run(
+        premise="x", risk_flags=[]
+    )
+    assert out["claims"]
+    assert not out["degraded"]
+
+
+def test_a_failed_call_names_the_exception_type():
+    class ServerError(RuntimeError):
+        pass
+
+    def invoke(prompt, tool):
+        raise ServerError("503 UNAVAILABLE")
+
+    out = _agent(_StubSearch([]), invoke).run(premise="x", risk_flags=[])
+    assert any("ServerError" in r and "503" in r for r in out["degradation_reasons"]), \
+        out["degradation_reasons"]
+
+
 def test_claims_from_every_loop_iteration_are_collected():
     """The loop may run more than once; claims accumulate rather than overwrite."""
     def invoke(prompt, tool):

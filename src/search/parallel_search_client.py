@@ -88,28 +88,31 @@ class ParallelSearchClient:
     def _call_live_parallel_api(self, query: str, num_results: int) -> Dict[str, Any]:
         """Make HTTP POST request to the Parallel Search API."""
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
+            "x-api-key": self.api_key,
             "Content-Type": "application/json",
             "User-Agent": "AgenticCinemaDetective/1.0"
         }
         payload = {
-            "query": query,
-            "limit": num_results,
-            "search_depth": "advanced"
+            "search_queries": [query],
+            "objective": query,
+            "mode": "advanced",
+            "max_chars_total": 6000,
+            "advanced_settings": {"max_results": num_results},
         }
         resp = requests.post(self.api_url, json=payload, headers=headers, timeout=20)
         resp.raise_for_status()
         res_json = resp.json()
 
-        # Normalize results format
+        # Normalize results format. The API returns per-result `excerpts`; join
+        # them into `snippet` because that is the exact text the research agent
+        # stores as `retrieved_text` and grounds evidence spans against.
         results = []
-        raw_items = res_json.get("results") or res_json.get("organic_results") or []
-        for item in raw_items[:num_results]:
+        for item in (res_json.get("results") or [])[:num_results]:
             results.append({
                 "title": item.get("title", "Web Result"),
-                "url": item.get("url") or item.get("link", "https://reddit.com/r/television"),
-                "snippet": item.get("snippet") or item.get("text", ""),
-                "published_date": item.get("date") or item.get("published_date", "")
+                "url": item.get("url", ""),
+                "snippet": " ".join(item.get("excerpts") or []),
+                "published_date": item.get("publish_date") or ""
             })
 
         return {
