@@ -22,12 +22,12 @@
     "dialogue_words": 401,
     "action_words": 15979,
     "dialogue_ratio": 0.024,
-    "estimated_duration_min": 110.2,
-    "estimated_duration_sec": 6610.0,
-    "estimated_total_shots": 1707,
+    "estimated_duration_min": 88.9,
+    "estimated_duration_sec": 5332.1,
+    "estimated_total_shots": 1377,
     "cuts_per_minute": 15.49,
-    "words_per_minute": 3.6,
-    "climax_acceleration": 1.047,
+    "words_per_minute": 4.5,
+    "climax_acceleration": 1.042,
     "characters_count": 9,
     "characters": [
       "BEGBIE",
@@ -39,6 +39,9 @@
       "SPUD",
       "SWANNEY",
       "TOMMY"
+    ],
+    "validation_errors": [
+      "implausible dialogue ratio: 0.024 (expected 0.10-0.85)"
     ]
   },
   "cv_metrics": {

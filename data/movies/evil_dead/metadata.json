@@ -18,20 +18,25 @@
   "real_stills_count": 6,
   "script_metrics": {
     "title": "Evil Dead",
-    "total_scenes": 1,
-    "total_words": 11462,
+    "total_scenes": 2,
+    "total_words": 11456,
     "dialogue_words": 7,
-    "action_words": 11455,
+    "action_words": 11449,
     "dialogue_ratio": 0.001,
-    "estimated_duration_min": 76.4,
-    "estimated_duration_sec": 4585.2,
-    "estimated_total_shots": 1206,
+    "estimated_duration_min": 61.6,
+    "estimated_duration_sec": 3695.5,
+    "estimated_total_shots": 972,
     "cuts_per_minute": 15.78,
     "words_per_minute": 0.1,
     "climax_acceleration": 1.0,
     "characters_count": 1,
     "characters": [
       "LINDA"
+    ],
+    "validation_errors": [
+      "too few scenes: 2 (expected >= 4)",
+      "implausible character count: 1 (expected 3-150)",
+      "implausible dialogue ratio: 0.001 (expected 0.10-0.85)"
     ]
   },
   "cv_metrics": {

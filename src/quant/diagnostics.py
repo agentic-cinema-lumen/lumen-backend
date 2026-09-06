@@ -1,3 +1,4 @@
+# ponytail: hitPrecision/missPrecision below are hardcoded placeholders, not measured. Not wired into api.py.
 """
 🎬 MODEL DIAGNOSTICS PROVIDER 🎬
 

@@ -1,0 +1,29 @@
+{
+  "inferred_genre": "Psychological Thriller",
+  "queries_executed": [
+    "films criticised for underexposed cinematography audience reaction"
+  ],
+  "claims": [
+    {
+      "category": "craft_precedent",
+      "valence": "negative",
+      "claim": "Deliberate underexposure survives theatrical mastering but not low-bitrate streaming, where audiences see crushed blacks.",
+      "evidence": "low-bitrate streaming turns fine shadow detail into grey blocks",
+      "source_url": "https://www.indiewire.com/features/craft/cinematography-darkness-1202129574/"
+    },
+    {
+      "category": "craft_precedent",
+      "valence": "positive",
+      "claim": "Where the murk reads as authored rather than accidental, audiences accept it and critics defend it.",
+      "evidence": "the murky, green-tinged underexposure is deliberate authorship rather than a defect",
+      "source_url": "https://www.theringer.com/movies/fight-club-anniversary-cinematography"
+    },
+    {
+      "category": "trope_fatigue",
+      "valence": "negative",
+      "claim": "The unreliable-narrator reveal is saturated; audiences anticipate it rather than being surprised by it.",
+      "evidence": "the unreliable narrator reveal is the single most predicted twist of the last decade",
+      "source_url": "https://www.reddit.com/r/movies/comments/unreliable_narrator_fatigue/"
+    }
+  ]
+}

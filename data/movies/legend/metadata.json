@@ -18,23 +18,25 @@
   "real_stills_count": 6,
   "script_metrics": {
     "title": "Legend",
-    "total_scenes": 1,
-    "total_words": 25561,
-    "dialogue_words": 76,
-    "action_words": 25485,
-    "dialogue_ratio": 0.003,
-    "estimated_duration_min": 170.5,
-    "estimated_duration_sec": 10229.0,
-    "estimated_total_shots": 2691,
-    "cuts_per_minute": 15.78,
-    "words_per_minute": 0.4,
-    "climax_acceleration": 1.0,
-    "characters_count": 4,
+    "total_scenes": 106,
+    "total_words": 24991,
+    "dialogue_words": 40,
+    "action_words": 24951,
+    "dialogue_ratio": 0.002,
+    "estimated_duration_min": 134.4,
+    "estimated_duration_sec": 8062.5,
+    "estimated_total_shots": 2074,
+    "cuts_per_minute": 15.43,
+    "words_per_minute": 0.3,
+    "climax_acceleration": 0.706,
+    "characters_count": 3,
     "characters": [
       "101C INTERIOR KITCHEN DAY",
-      "128 EXTERIOR RING POND DAY",
       "7C EXTERIOR BOG NIGHT",
       "LEGEND"
+    ],
+    "validation_errors": [
+      "implausible dialogue ratio: 0.002 (expected 0.10-0.85)"
     ]
   },
   "cv_metrics": {

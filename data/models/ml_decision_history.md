@@ -2,7 +2,7 @@
 
 *Document Generated for the Pre-Mortem Judge & Explanation Engine*  
 *Champion Model Artifact: `data/models/champion_model.joblib`*  
-*Validation Corpus: 100 Genuine Feature Film Releases (Screenplays + 752 Spaced Film-Grab Stills)*
+*Validation Corpus: 80 of 100 Genuine Feature Film Releases (Screenplays + Spaced Film-Grab Stills) — 20 excluded by `validate_screenplay()`, see section 7*
 
 ---
 
@@ -72,6 +72,78 @@ The agent synthesized the empirical craft theory:
 - **Problem**: Running an iterative ML training loop during live agent deliberation consumes 5–10 seconds and unnecessary LLM tokens.
 - **Solution**: Persisted the champion Ridge model to `data/models/champion_model.joblib`.
 - **Result**: The production `QuantOracle` loads the model in **$<1$ ms** and executes inference in **$0.54$ ms**, allowing the main agent to query statistical predictions instantaneously.
+
+---
+
+### 7. Decision: Re-extraction with the Fixed Parser, and Exclusion of Known-Bad Rows (slice 3b, revised in slice 3c)
+
+- **Problem**: The champion model was trained on `script_metrics` cached in
+  `data/movies/movies_manifest.json` by the *old* screenplay parser, while inference
+  re-parses the script with the *fixed* parser (scene headers, character cues, and a
+  186-words-per-page duration model). Features and model were not a matched pair.
+- **Action**:
+  1. `scripts/reextract_script_metrics.py` re-parses every `data/movies/<slug>/script.txt`
+     with the current `ScriptParser` and rewrites the cached metrics in
+     `movies_manifest.json` and each `data/movies/<slug>/metadata.json`.
+  2. Every re-parsed film runs through `validate_screenplay()`. Failures keep their
+     metrics but carry a `validation_errors` list; `benchmark_dataset._trainable()`
+     drops those rows from both the training frame and the genre prior.
+  3. `train_champion()` retrained and re-persisted `data/models/champion_model.joblib`.
+  4. **Slice 3c**: `validate_screenplay()`'s character-count ceiling was raised from 80
+     to 150, because large ensemble casts legitimately exceed 80. The 10 films that
+     failed only that ceiling returned to training, and the corpus was re-extracted and
+     the champion retrained again.
+- **Training corpus**: 90 films of 100. 10 rows excluded. (Slice 3b excluded 20.)
+
+#### Excluded rows (known-bad, enumerated)
+
+All 10 remaining exclusions are genuinely unparseable documents: transcripts, prose
+dumps, or single blocks with no usable sluglines, so scene and dialogue counts collapse
+to 0-2. Excluding them is correct.
+
+| Slug | `validate_screenplay()` reason |
+| --- | --- |
+| `alien` | implausible runtime: 2.7 min (expected 60-240); too few scenes: 1 (expected >= 4); implausible character count: 0 (expected 3-150); implausible dialogue ratio: 0.0 (expected 0.10-0.85) |
+| `war_of_the_worlds` | implausible character count: 0 (expected 3-150); implausible dialogue ratio: 0.0 (expected 0.10-0.85) |
+| `finding_nemo` | too few scenes: 1 (expected >= 4); implausible dialogue ratio: 0.887 (expected 0.10-0.85) |
+| `aladdin` | too few scenes: 1 (expected >= 4); implausible character count: 1 (expected 3-150); implausible dialogue ratio: 0.0 (expected 0.10-0.85) |
+| `saw` | too few scenes: 1 (expected >= 4) |
+| `evil_dead` | too few scenes: 2 (expected >= 4); implausible character count: 1 (expected 3-150); implausible dialogue ratio: 0.001 (expected 0.10-0.85) |
+| `labyrinth` | implausible character count: 0 (expected 3-150); implausible dialogue ratio: 0.0 (expected 0.10-0.85) |
+| `legend` | implausible dialogue ratio: 0.002 (expected 0.10-0.85) |
+| `gravity` | too few scenes: 1 (expected >= 4) |
+| `trainspotting` | implausible dialogue ratio: 0.024 (expected 0.10-0.85) |
+
+The second failure class from slice 3b is gone. Ten films — `forrest_gump` (94 cues),
+`django_unchained` (91), `inglourious_basterds` (110), `saving_private_ryan` (93),
+`groundhog_day` (81), `gremlins` (98), `braveheart` (83), `scarface` (105),
+`catch_me_if_you_can` (134), `black_panther` (88) — parsed correctly and failed only the
+80-character ceiling. Slice 3c raised that ceiling to 150 and returned all 10 to
+training. 200 distinct cues is still rejected, so the gate still catches prose dumps
+whose every capitalised line reads as a character.
+
+#### Metrics: n=80 (slice 3b) vs n=90 (slice 3c) (5-fold CV, `random_state=42`)
+
+| Model | cv_r2 (n=80) | cv_r2 (n=90) | cv_mae (n=80) | cv_mae (n=90) | cv_rmse (n=90) |
+| --- | --- | --- | --- | --- | --- |
+| **Ridge (champion, pinned)** | -0.116 | **+0.145** | 0.498 | **0.435** | **0.591** |
+| Random Forest | -0.093 | +0.133 | 0.469 | 0.419 | 0.586 |
+| HistGradientBoosting | -0.064 | -0.152 | 0.507 | 0.480 | 0.645 |
+
+- **Ridge stays pinned, and now also wins.** `explain_prediction()` produces real
+  per-feature attributions only for the linear branch; the tree branch returns an
+  `importance x 0.1` stand-in. On n=90 ridge has the best cv_r2 of the three, so nothing
+  argues for unpinning it.
+- **Fold-noise band (ridge cv_r2 over KFold seeds)**: `rs=0: +0.115`, `rs=1: +0.125`,
+  `rs=2: +0.029`, `rs=42: +0.145` — a span of 0.12, and every seed is now positive.
+  Random Forest spans 0.18 and HistGradientBoosting 0.22 over the same seeds. The
+  regression guard in `tests/test_quant_loop.py::test_08` sits at the recorded +0.145
+  minus 0.15.
+- **Honest reading**: the 10 returned ensemble films moved ridge from -0.116 to +0.145,
+  the first positive out-of-sample $R^2$ this model has held across all four seeds. The
+  error bar is still +/-0.44, so the model gives a genre-anchored baseline rather than a
+  ranking of individual screenplays. The gain came from more valid rows, not from a
+  better model.
 
 ---
 

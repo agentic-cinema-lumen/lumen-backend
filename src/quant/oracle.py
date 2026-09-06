@@ -55,8 +55,10 @@ class QuantOracle:
         agent.run_training_loop()
         self.model = agent.champion_model
 
-    # Corpus-centered IMDb genre priors calculated across 100 benchmark feature films
-    # Anchored to the 100-film corpus (mean rating 7.80) to eliminate train/serve population mismatch
+    # Last-resort fallback only, used when the training manifest is unavailable
+    # (e.g. a bare deployment). Corpus-centred means over the 100-film benchmark
+    # corpus, so the fallback and the corpus prior describe the same population.
+    # get_genre_baseline() always prefers the corpus-derived prior.
     GENRE_PRIORS: Dict[str, float] = {
         "drama": 8.13,
         "adventure": 7.76,
@@ -81,25 +83,34 @@ class QuantOracle:
     CORPUS_DEFAULT_RATING: float = 7.80
 
     @classmethod
-    def get_genre_baseline_static(cls, genre: Optional[str]) -> float:
-        """Fetch corpus-centered IMDb mean for a genre without requiring instance initialization."""
+    def get_genre_baseline_static(cls, genre: Optional[str], data_root: str = "data") -> float:
+        """Genre prior without an initialized instance.
+
+        Prefers the corpus-derived prior, exactly as get_genre_baseline() does.
+        Falls back to the GENRE_PRIORS table only when no training manifest is
+        on disk.
+        """
+        from src.quant.benchmark_dataset import get_corpus_genre_priors, genre_prior
+        priors = get_corpus_genre_priors(str(Path(data_root) / "movies"))
+        if priors["counts"]:
+            return genre_prior(genre, priors)
+
         if not genre:
             return cls.CORPUS_DEFAULT_RATING
         g_clean = str(genre).lower().strip()
         if g_clean in cls.GENRE_PRIORS:
             return cls.GENRE_PRIORS[g_clean]
 
-        # Handle compound genres (e.g. "Horror, Sci-Fi" or "Action / Adventure")
+        # Compound genres, e.g. "Horror, Sci-Fi" or "Action / Adventure".
         subparts = [p.strip() for p in g_clean.replace('/', ',').split(',') if p.strip()]
         matched = [cls.GENRE_PRIORS[p] for p in subparts if p in cls.GENRE_PRIORS]
         if matched:
             return round(float(sum(matched) / len(matched)), 2)
-
         return cls.CORPUS_DEFAULT_RATING
 
     def get_genre_baseline(self, genre: Optional[str]) -> float:
-        """Fetch corpus-centered IMDb mean for a genre, defaulting to corpus median 7.80."""
-        return self.get_genre_baseline_static(genre)
+        """Genre prior from the training corpus, so training and serving agree."""
+        return self.get_genre_baseline_static(genre, data_root=str(self.data_root))
 
     def predict_craft(
         self,
@@ -137,8 +148,8 @@ class QuantOracle:
         expected_rating = float(self.model.predict_expected_rating(populated_features))
         residual_delta = round(expected_rating - genre_baseline, 2)
 
-        # 2. Confidence Interval (Out-of-sample CV MAE is ~0.44)
-        mae = self.model.metrics.get("cv_mae", 0.441)
+        # 2. Confidence Interval (Out-of-sample CV MAE is ~0.50)
+        mae = self.model.metrics.get("cv_mae", 0.435)
         ci_lower = round(max(1.0, expected_rating - mae), 2)
         ci_upper = round(min(10.0, expected_rating + mae), 2)
 
@@ -340,6 +351,38 @@ class QuantOracle:
         result["vision_summary"] = vision_metrics.get("visual_style_summary")
         return result
 
+    def features_for_movie_package(self, movie_dir: str) -> Optional[Dict[str, Any]]:
+        """Full craft feature vector for a movie package, or None if metadata is thin."""
+        p = Path(movie_dir).resolve()
+        meta_file = p / "metadata.json"
+        if not meta_file.exists():
+            return None
+        try:
+            with open(meta_file, "r", encoding="utf-8") as f:
+                meta = json.load(f)
+        except Exception:
+            return None
+        sm = meta.get("script_metrics")
+        cv = meta.get("cv_metrics")
+        if not sm or not cv:
+            return None
+        cpm = float(sm.get("cuts_per_minute", 15.5))
+        wpm = float(sm.get("words_per_minute", 55.0))
+        return {
+            "title": meta.get("title", p.name.replace("_", " ").title()),
+            "genre": meta.get("genre", "Drama"),
+            "total_duration_min": float(sm.get("estimated_duration_min", meta.get("duration", 110.0))),
+            "cuts_per_minute": cpm,
+            "pacing_acceleration": float(sm.get("climax_acceleration", 1.0)),
+            "average_shot_length": round(60.0 / max(cpm, 1.0), 2),
+            "words_per_minute": wpm,
+            "lines_per_minute": round(wpm / 12.0, 2),
+            "dialogue_shot_ratio": float(sm.get("dialogue_ratio", 0.38)),
+            "mean_luminance": float(cv.get("mean_luminance", 65.0)),
+            "luminance_std": float(cv.get("luminance_std", 25.0)),
+            "dark_frame_ratio": float(cv.get("dark_frame_ratio", 0.30))
+        }
+
     def predict_movie_package(self, movie_dir: str) -> Dict[str, Any]:
         """Directly evaluate a complete movie directory in data/movies/."""
         p = Path(movie_dir).resolve()
@@ -349,28 +392,10 @@ class QuantOracle:
         meta_file = p / "metadata.json"
         if meta_file.exists():
             try:
-                with open(meta_file, "r", encoding="utf-8") as f:
-                    meta = json.load(f)
-                sm = meta.get("script_metrics")
-                cv = meta.get("cv_metrics")
-                if sm and cv:
-                    cpm = float(sm.get("cuts_per_minute", 15.5))
-                    wpm = float(sm.get("words_per_minute", 55.0))
-                    asl = round(60.0 / max(cpm, 1.0), 2)
-                    features = {
-                        "title": meta.get("title", p.name.replace("_", " ").title()),
-                        "genre": meta.get("genre", "Drama"),
-                        "total_duration_min": float(sm.get("estimated_duration_min", meta.get("duration", 110.0))),
-                        "cuts_per_minute": cpm,
-                        "pacing_acceleration": float(sm.get("climax_acceleration", 1.0)),
-                        "average_shot_length": asl,
-                        "words_per_minute": wpm,
-                        "lines_per_minute": round(wpm / 12.0, 2),
-                        "dialogue_shot_ratio": float(sm.get("dialogue_ratio", 0.38)),
-                        "mean_luminance": float(cv.get("mean_luminance", 65.0)),
-                        "luminance_std": float(cv.get("luminance_std", 25.0)),
-                        "dark_frame_ratio": float(cv.get("dark_frame_ratio", 0.30))
-                    }
+                features = self.features_for_movie_package(str(p))
+                if features is not None:
+                    with open(meta_file, "r", encoding="utf-8") as f:
+                        meta = json.load(f)
                     res = self.predict_craft(features)
                     if "imdb_rating" in meta:
                         actual = float(meta["imdb_rating"])
@@ -479,13 +504,16 @@ class QuantOracle:
     def get_decision_summary(self) -> str:
         """Return a concise summary of the ML agent's design decisions for LLM prompting."""
         return (
-            "The Champion Quant Residual Model is a Ridge Regression (alpha=10.0, CV MAE: 0.441, CV RMSE: 0.604) "
-            "trained on 100 genuine feature films (screenplays + 752 Film-Grab stills) with zero target leakage. "
-            "It isolates pre-production craft residuals (Rating_actual - Rating_expected) driven by 5 primary axes: "
-            "(1) Empirical genre baseline anchor (41.7%), (2) Screenplay pacing and climax acceleration (18.1%), "
-            "(3) Cinematography lighting exposure and dark frame ratio (16.5%), (4) Runtime scope (16.2%), "
-            "and (5) Spoken dialogue velocity (7.6%). Excessive visual darkness (>40%) incurs a severe compression drag, "
-            "while pacing acceleration >1.75x risks unearned climax fatigue."
+            "The Champion Quant Residual Model is a Ridge Regression (alpha=10.0, CV MAE: 0.435, CV RMSE: 0.591, CV R2: 0.145) "
+            "trained on 80 genuine feature films (screenplays + Film-Grab stills) with zero target leakage; the other "
+            "20 of the 100-film corpus fail validate_screenplay() and are excluded. "
+            "It isolates pre-production craft residuals (Rating_actual - Rating_expected) against a genre prior "
+            "computed from the same training corpus (shrunk toward the corpus mean of 7.80), so a median film "
+            "in any genre scores as baseline-aligned rather than exceptional. Coefficient magnitudes rank: "
+            "(1) genre baseline anchor, (2) mean luminance, (3) runtime scope, (4) cutting tempo, "
+            "(5) luminance spread, then pacing acceleration and dark frame ratio. Note the honest caveat: "
+            "out-of-sample CV R2 is -0.116, so every craft effect this model reports on a single film falls "
+            "inside the +/-0.50 error bar. Direction of the darkness effect is defensible; magnitude is not."
         )
 
 

@@ -23,14 +23,20 @@
     "dialogue_words": 0,
     "action_words": 501,
     "dialogue_ratio": 0.0,
-    "estimated_duration_min": 3.3,
-    "estimated_duration_sec": 200.4,
-    "estimated_total_shots": 52,
-    "cuts_per_minute": 15.57,
+    "estimated_duration_min": 2.7,
+    "estimated_duration_sec": 161.6,
+    "estimated_total_shots": 42,
+    "cuts_per_minute": 15.59,
     "words_per_minute": 0.0,
     "climax_acceleration": 1.0,
     "characters_count": 0,
-    "characters": []
+    "characters": [],
+    "validation_errors": [
+      "implausible runtime: 2.7 min (expected 60-240)",
+      "too few scenes: 1 (expected >= 4)",
+      "implausible character count: 0 (expected 3-150)",
+      "implausible dialogue ratio: 0.0 (expected 0.10-0.85)"
+    ]
   },
   "cv_metrics": {
     "mean_luminance": 24.43,

@@ -15,6 +15,95 @@ from src.quant.feature_extractor import extract_from_file
 
 
 # -------------------------------------------------------------
+# Genre prior, computed from the training corpus itself
+# -------------------------------------------------------------
+# The old prior came from a 29k-film global population (Drama 6.64) while the
+# model trains on 100 famous films (mean 7.80). That train/serve mismatch gave
+# every submission a fake +1.2 to +1.5 "craft lift". The table below is built
+# from the same manifest the model trains on, so the residual centres on zero.
+
+_GENRE_PRIOR_CACHE: Dict[str, Dict[str, Any]] = {}
+
+
+def primary_genre(genre_str: Optional[str]) -> str:
+    """First-listed genre, lowercased. 'Horror, Sci-Fi' -> 'horror'."""
+    return str(genre_str or "").replace("/", ",").split(",")[0].strip().lower()
+
+
+def get_corpus_genre_priors(movies_dir: str = "data/movies") -> Dict[str, Any]:
+    """Per-genre rating sums/counts over the training corpus, plus the corpus mean."""
+    key = str(Path(movies_dir).resolve())
+    if key in _GENRE_PRIOR_CACHE:
+        return _GENRE_PRIOR_CACHE[key]
+
+    import json
+    by_genre: Dict[str, List[float]] = {}
+    manifest_path = Path(movies_dir) / "movies_manifest.json"
+    if manifest_path.exists():
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+        for m in manifest:
+            if not _trainable(m):
+                continue
+            by_genre.setdefault(primary_genre(m.get("genre")), []).append(float(m["imdb_rating"]))
+
+    sums = {g: float(sum(v)) for g, v in by_genre.items()}
+    counts = {g: len(v) for g, v in by_genre.items()}
+    ratings = [r for v in by_genre.values() for r in v]
+
+    table = {
+        "sums": sums,
+        "counts": counts,
+        "corpus_mean": float(np.mean(ratings)) if ratings else 6.33,
+        "shrinkage_n0": _shrinkage_n0(by_genre),
+        "genres": sorted(counts),
+    }
+    _GENRE_PRIOR_CACHE[key] = table
+    return table
+
+
+def _shrinkage_n0(by_genre: Dict[str, List[float]]) -> float:
+    """Empirical-Bayes shrinkage weight: within-genre variance / between-genre variance.
+
+    Genres hold between 1 and 26 films, so a raw genre mean is a noisy estimate.
+    n0 says how many films a genre needs before its own mean outweighs the corpus
+    mean. It is derived from the corpus (n0 = 4.4 here), not tuned.
+    """
+    multi = [np.array(v) for v in by_genre.values() if len(v) > 1]
+    if len(multi) < 2:
+        return 0.0
+    within = sum(float(((v - v.mean()) ** 2).sum()) for v in multi) / sum(len(v) - 1 for v in multi)
+    means = np.array([np.mean(v) for v in by_genre.values()])
+    sizes = np.array([len(v) for v in by_genre.values()])
+    between = max(float(np.var(means, ddof=1)) - within * float(np.mean(1.0 / sizes)), 1e-6)
+    return round(within / between, 2)
+
+
+def genre_prior(
+    genre: Optional[str],
+    priors: Dict[str, Any],
+    exclude_rating: Optional[float] = None
+) -> float:
+    """Genre prior from the training corpus, shrunk toward the corpus mean.
+
+    Pass exclude_rating for the leave-one-out value when computing a training
+    row's own prior. Unseen genre -> corpus mean.
+    """
+    corpus_mean = float(priors["corpus_mean"])
+    g = primary_genre(genre)
+    total = priors["sums"].get(g, 0.0)
+    n = priors["counts"].get(g, 0)
+    if exclude_rating is not None and n > 0:
+        total -= float(exclude_rating)
+        n -= 1
+    if n <= 0:
+        return round(corpus_mean, 2)
+
+    weight = n / (n + float(priors["shrinkage_n0"]))
+    return round(corpus_mean + weight * (total / n - corpus_mean), 2)
+
+
+# -------------------------------------------------------------
 # Curated Iconic Benchmark Episodes (Real IMDb Ratings)
 # -------------------------------------------------------------
 CURATED_BENCHMARKS: List[Dict[str, Any]] = [
@@ -238,6 +327,15 @@ def load_local_data_episodes(data_root: str = "data") -> List[Dict[str, Any]]:
     return episodes
 
 
+def _trainable(m: Dict[str, Any]) -> bool:
+    """A manifest entry is trainable only if its script parsed into valid screenplay
+    metrics. ponytail: validate_screenplay() reasons are cached on the metrics by
+    scripts/reextract_script_metrics.py, so no re-parse is needed here.
+    Excluded slugs are enumerated in data/models/ml_decision_history.md."""
+    sm = m.get("script_metrics")
+    return bool(m.get("has_script") and sm and not sm.get("validation_errors"))
+
+
 def load_movie_corpus(movies_dir: str = "data/movies") -> List[Dict[str, Any]]:
     """Load screenplays from data/movies/movies_manifest.json into training records."""
     manifest_path = Path(movies_dir) / "movies_manifest.json"
@@ -251,22 +349,18 @@ def load_movie_corpus(movies_dir: str = "data/movies") -> List[Dict[str, Any]]:
     except Exception:
         return []
 
-    from src.quant.movie_dataset_loader import MovieDatasetLoader
-    try:
-        loader = MovieDatasetLoader.get_instance()
-    except Exception:
-        loader = None
+    priors = get_corpus_genre_priors(movies_dir)
 
     movies = []
     for m in manifest:
-        if not m.get("has_script") or not m.get("script_metrics"):
+        if not _trainable(m):
             continue
         sm = m["script_metrics"]
         cpm = float(sm.get("cuts_per_minute", 15.0))
         wpm = float(sm.get("words_per_minute", 100.0))
         genre_str = m.get("genre", "Drama")
-        from src.quant.oracle import QuantOracle
-        genre_base = QuantOracle.get_genre_baseline_static(genre_str)
+        # Leave-one-out so a film's own rating does not leak into its own prior.
+        genre_base = genre_prior(genre_str, priors, exclude_rating=float(m["imdb_rating"]))
 
         movies.append({
             "episode_id": f"movie_{m.get('slug', m['title'])}",

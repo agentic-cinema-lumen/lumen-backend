@@ -23,15 +23,20 @@
     "dialogue_words": 8,
     "action_words": 17157,
     "dialogue_ratio": 0.0,
-    "estimated_duration_min": 114.4,
-    "estimated_duration_sec": 6866.5,
-    "estimated_total_shots": 1806,
-    "cuts_per_minute": 15.78,
+    "estimated_duration_min": 92.3,
+    "estimated_duration_sec": 5537.1,
+    "estimated_total_shots": 1457,
+    "cuts_per_minute": 15.79,
     "words_per_minute": 0.1,
     "climax_acceleration": 1.0,
     "characters_count": 1,
     "characters": [
       "COMPILED BY BEN SCRIPPS"
+    ],
+    "validation_errors": [
+      "too few scenes: 1 (expected >= 4)",
+      "implausible character count: 1 (expected 3-150)",
+      "implausible dialogue ratio: 0.0 (expected 0.10-0.85)"
     ]
   },
   "cv_metrics": {

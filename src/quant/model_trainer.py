@@ -54,6 +54,29 @@ DEFAULT_FEATURE_VALUES: Dict[str, float] = {
 }
 
 
+def train_champion(
+    data_root: str = "data",
+    model_type: str = "ridge",
+    cv_splits: int = 5
+) -> Dict[str, float]:
+    """Retrain and persist data/models/champion_model.joblib. Returns CV metrics.
+
+    ponytail: model_type is pinned to ridge rather than taken from the tournament
+    winner. With the recentred genre prior random_forest scores a better cv_r2
+    (0.245 vs -0.016), but explain_prediction() only produces real per-feature
+    attributions for ridge — the tree branch returns a flat importance stand-in,
+    which is what the product surfaces as "craft attributions". Switching
+    architecture is a separate change from recentring the prior.
+    """
+    from src.quant.benchmark_dataset import get_full_training_dataset
+
+    df = get_full_training_dataset(data_root)
+    model = QuantResidualModel(model_type=model_type)
+    metrics = model.train_and_evaluate(df, cv_splits=cv_splits)
+    model.save(str(Path(data_root) / "models" / "champion_model.joblib"))
+    return metrics
+
+
 class QuantResidualModel:
     """End-to-end ML model for expected rating prediction and residual anomaly detection."""
 
