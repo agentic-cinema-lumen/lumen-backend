@@ -21,11 +21,25 @@ from src.quant.model_trainer import QuantResidualModel, FEATURE_COLUMNS
 from src.quant.quant_agent import QuantAgent
 
 
+# Champion cv_r2 recorded after the genre-prior retrain (slice 3).
+RECORDED_CHAMPION_CV_R2 = -0.035
+
+
 class TestQuantResidualEngine(unittest.TestCase):
 
     def setUp(self):
         self.root_dir = Path(__file__).resolve().parent.parent
         self.alien_keyframe = self.root_dir / "data" / "movies" / "alien" / "keyframes" / "shot_0001.jpg"
+
+        # QuantAgent.run_training_loop() persists its tournament winner over the
+        # committed champion artifact, which changes what every later test (and
+        # the oracle) loads. Snapshot and restore it.
+        self._champion_path = self.root_dir / "data" / "models" / "champion_model.joblib"
+        self._champion_bytes = self._champion_path.read_bytes() if self._champion_path.exists() else None
+
+    def tearDown(self):
+        if self._champion_bytes is not None:
+            self._champion_path.write_bytes(self._champion_bytes)
 
     def test_01_feature_extractor_from_local_data(self):
         """Verify feature extractor correctly computes craft metrics from shot sequence."""
@@ -136,6 +150,23 @@ class TestQuantResidualEngine(unittest.TestCase):
         res = trainer.evaluate_episode("movie_alien", actual_rating=8.4)
         self.assertIn("quant_evaluation", res)
         self.assertIn("residual", res["quant_evaluation"])
+
+    def test_08_champion_cv_r2_regression_guard(self):
+        """Loose regression guard on the champion model's cv_r2.
+
+        This guards against *collapse*, not quality. At n=100 the fold-driven
+        swing in cv_r2 is roughly +/-0.7, so no single value here is a
+        trustworthy measure of model quality. The floor is the recorded
+        post-retrain value minus 0.15: it fires when the training data or the
+        feature pipeline breaks, and stays silent for ordinary fold noise.
+        """
+        df = get_full_training_dataset(data_root=str(self.root_dir / "data"))
+        model = QuantResidualModel(model_type="ridge")
+        metrics = model.train_and_evaluate(df, cv_splits=5)
+        self.assertGreaterEqual(
+            metrics["cv_r2"], RECORDED_CHAMPION_CV_R2 - 0.15,
+            f"cv_r2 collapsed to {metrics['cv_r2']} from recorded {RECORDED_CHAMPION_CV_R2}"
+        )
 
 
 if __name__ == "__main__":
