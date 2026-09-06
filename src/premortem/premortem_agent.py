@@ -12,7 +12,7 @@ subagents. The adapter exists so `api.py` and the CLI share one seam that tests
 can substitute.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from src.agents.orchestrator import Orchestrator, Submission
 
@@ -32,14 +32,18 @@ class PreMortemAgent:
         title: str = "Untitled Submission",
         medium: str = "Feature film",
         target_geography: str = "Global streaming",
+        on_event: Optional[Callable[[str, Dict[str, Any]], None]] = None,
     ) -> Dict[str, Any]:
         """Script mode when `script_text` is given, concept mode otherwise."""
-        return self.orchestrator.run(Submission(
-            story=story,
-            script_text=script_text,
-            keyframes_dir=keyframes_dir,
-            genre=genre,
-            title=title,
-            medium=medium,
-            target_geography=target_geography,
-        ))
+        return self.orchestrator.run(
+            Submission(
+                story=story,
+                script_text=script_text,
+                keyframes_dir=keyframes_dir,
+                genre=genre,
+                title=title,
+                medium=medium,
+                target_geography=target_geography,
+            ),
+            on_event=on_event,
+        )

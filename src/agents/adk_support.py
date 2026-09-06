@@ -11,8 +11,6 @@ import os
 import uuid
 from typing import Any, Callable, Dict, List, Optional
 
-from google.genai import types
-
 from src.utils.env_helper import load_env_file
 
 load_env_file()
@@ -39,28 +37,36 @@ def has_gemini_key() -> bool:
 
 
 class ToolEventLog:
-    """Collects per-tool-call events via ADK's before/after tool callbacks.
+    """Collects per-tool-call events via ADK's before/after tool callbacks and optionally emits to live stream."""
 
-    ponytail: the events are returned in the report rather than streamed. The
-    contract is submit-once, so `POST /v1/predictions` has nowhere to stream
-    them; wiring them to SSE is a follow-up owned with the frontend.
-    """
-
-    def __init__(self) -> None:
+    def __init__(self, on_event: Optional[Callable[[str, Dict[str, Any]], None]] = None) -> None:
         self.events: List[Dict[str, Any]] = []
+        self.on_event = on_event
 
     def before(self, tool, args, tool_context):  # ADK callback signature
-        self.events.append({"phase": "tool_start", "tool": tool.name, "args": dict(args)})
+        event = {"phase": "tool_start", "tool": tool.name, "args": dict(args)}
+        self.events.append(event)
+        if self.on_event:
+            try:
+                self.on_event("tool_start", event)
+            except Exception:
+                pass
         return None
 
     def after(self, tool, args, tool_context, tool_response):
-        self.events.append({
+        event = {
             "phase": "tool_end",
             "tool": tool.name,
             "args": dict(args),
             "result_count": len((tool_response or {}).get("results", []))
             if isinstance(tool_response, dict) else None,
-        })
+        }
+        self.events.append(event)
+        if self.on_event:
+            try:
+                self.on_event("tool_end", event)
+            except Exception:
+                pass
         return None
 
 
@@ -71,6 +77,7 @@ def run_agent(agent, prompt: str, output_key: str) -> List[Any]:
     read off the event stream instead of out of the final session.
     """
     from google.adk.runners import InMemoryRunner
+    from google.genai import types
 
     runner = InMemoryRunner(agent=agent, app_name=APP_NAME)
     session_id = str(uuid.uuid4())

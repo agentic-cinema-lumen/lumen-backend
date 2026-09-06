@@ -31,8 +31,14 @@ class StubResearchAgent:
         self.reasons = reasons or (["search results are mock output"] if degraded else [])
         self.seen: Dict[str, Any] = {}
 
-    def run(self, premise, risk_flags=None, genre=None, title="Untitled Submission"):
+    def run(self, premise, risk_flags=None, genre=None, title="Untitled Submission", on_event=None, **kwargs):
         self.seen = {"premise": premise, "risk_flags": risk_flags, "genre": genre}
+        if on_event:
+            try:
+                on_event("tool_start", {"phase": "tool_start", "tool": "parallel_search", "args": {"query": RESEARCH_OUTPUT["queries_executed"][0]}})
+                on_event("tool_end", {"phase": "tool_end", "tool": "parallel_search", "result_count": 4})
+            except Exception:
+                pass
         return {
             "claims": self.claims,
             "dropped": [],

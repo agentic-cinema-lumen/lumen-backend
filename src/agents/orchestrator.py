@@ -98,7 +98,17 @@ class Orchestrator:
 
     # ------------------------------------------------------------------- run
 
-    def run(self, sub: Submission) -> Dict[str, Any]:
+    def run(
+        self, sub: Submission, on_event: Optional[Callable[[str, Dict[str, Any]], None]] = None
+    ) -> Dict[str, Any]:
+        def _emit(event_type: str, data: Dict[str, Any]):
+            if on_event:
+                try:
+                    on_event(event_type, data)
+                except Exception:
+                    pass
+
+        _emit("stage", {"stage": "ingestion", "label": "Extracting screenplay metrics & concept frame measurements...", "progress": 0.15})
         vision = self.concept_inspector.inspect_images(sub.keyframes_dir)
         has_frames = vision.get("image_count", 0) > 0
         features = self._features(sub, vision)
@@ -110,14 +120,25 @@ class Orchestrator:
             {k: v for k, v in features.items() if isinstance(v, (int, float))}
         )
 
-        research = self.research_agent.run(
-            premise=sub.story,
-            risk_flags=risk_flags,
-            genre=sub.genre,
-            title=sub.title,
-        )
+        _emit("stage", {"stage": "research", "label": "Executing Parallel Search for audience reception & trope precedents...", "progress": 0.35})
+        try:
+            research = self.research_agent.run(
+                premise=sub.story,
+                risk_flags=risk_flags,
+                genre=sub.genre,
+                title=sub.title,
+                on_event=on_event,
+            )
+        except TypeError:
+            research = self.research_agent.run(
+                premise=sub.story,
+                risk_flags=risk_flags,
+                genre=sub.genre,
+                title=sub.title,
+            )
         genre = sub.genre or research.get("inferred_genre")
 
+        _emit("stage", {"stage": "quant_oracle", "label": "Calculating QuantOracle craft residual & 15-point counterfactual sweep...", "progress": 0.65})
         submission = SubmissionOracle({**features, "genre": genre}, oracle=oracle)
         prediction = submission.baseline()
         sweep = run_sweep(submission)
@@ -151,7 +172,9 @@ class Orchestrator:
             "counterfactual_sweep": sweep,
             "research_claims": claims,
         }
+        _emit("stage", {"stage": "synthesis", "label": "Synthesizing adversarial pre-mortem report...", "progress": 0.85})
         synthesis = self.synthesis_agent.run(synthesis_inputs)
+        _emit("stage", {"stage": "finalizing", "label": "Finalizing pre-mortem report...", "progress": 0.95})
 
         reasons = list(research["degradation_reasons"]) + list(synthesis["degradation_reasons"])
         return {

@@ -1,0 +1,27 @@
+# Git & version control
+.git
+.gitignore
+
+# Checkpoints & cache
+.bonfire
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env
+
+# Tests & IDE artifacts
+tests/
+.idea
+.vscode
+.DS_Store
+
+# Temporary scratch & logs
+*.log
+scratch/

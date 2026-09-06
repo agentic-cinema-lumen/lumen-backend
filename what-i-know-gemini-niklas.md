@@ -310,3 +310,44 @@ Hatim's UI displays a 4-agent execution sequence:
 ### 4. Deployment Status
 - **Frontend Live URL**: `https://lumen-480750414136.europe-north1.run.app` (deployed on Google Cloud Run in `europe-north1` via Cloud Build).
 - **Backend Target**: FastAPI service deploying to Cloud Run, implementing `POST /v1/predictions`, `GET /v1/predictions/{id}/events` (generic SSE stream), and `GET /v1/diagnostics/model`.
+
+
+---
+
+## 9. Melvin's Architectural Deep-Dive (Issue #3: *"What we are building — system overview"*)
+
+Melvin Palmquist posted a comprehensive system overview in **Issue #3**, establishing the authoritative end-to-end design, data contracts, anti-hallucination guardrails, and honest disclosures:
+
+### 1. The Core Stance: *Not a Black-Box Score Generator*
+- **What it is**: An evidence and directional pre-mortem tool. It returns measured craft traits, risks carried, live research about released films with matching traits, and a rating projection carrying its own $\pm 0.435$ star error bar.
+- **What it is NOT**: It does not spit out a naive point score. When internal uncertainty covers the answer, it explicitly declares **`inconclusive`**.
+- **The Core Rule**: **Deterministic Python owns every number; two LLM agents own only language.**
+
+### 2. The Two Execution Modes
+1. **Concept Mode**: Submits story text (2,000 chars), medium, and target geography without materials. Executes market research, trope fatigue analysis, and genre prior baseline. Craft sections marked absent.
+2. **Screenplay Mode**: Submits story + materials as `data:` URIs (full screenplay + concept stills, capped at 20MB). Executes the full deterministic pipeline + visual inspection.
+   - **Screenplay Gate (`validate_screenplay()`):** Requires 60–240 min estimated runtime, $\ge 4$ scenes, 3–150 characters, 0.10–0.85 dialogue ratio. Rejects non-screenplays (e.g. 500-word synopses) with **HTTP 400**.
+
+### 3. The 4 Presentation Slots in the Lumen Contract
+The 4 agents displayed in Hatim's Lumen UI are **presentation slots**, filled by clean separation of code and LLMs:
+- **`story`** (Deterministic): `ScriptParser` metrics + `SubmissionOracle` prediction.
+- **`visual`** (Deterministic): `ConceptInspector` OpenCV/Pillow luminance & darkness measurements.
+- **`audience`** (LLM + Search): `ResearchAgent` (Google ADK + Gemini) finding craft precedents.
+- **`market`** (LLM + Search): `ResearchAgent` finding trope fatigue and demand signals via Parallel Search API.
+
+### 4. Trust & Anti-Hallucination Guardrails
+- **Grounding Filter (`filter_claims`):** A search claim is strictly deleted unless its `source_url` was actually returned by Parallel Search **AND** its `evidence` is a verbatim substring of the retrieved page.
+- **Unsourced Number Scanner (`unsourced_numbers`):** Scans LLM synthesis prose for any numbers absent from the deterministic inputs; marks the run `degraded` if an invented figure is detected.
+- **Noise-Floor Labelling:** Every single-variable probe in the 15-point sweep is tagged `inside_noise_floor` ($\Delta < 0.435\text{ MAE}$).
+- **Loud Degradation:** If `PARALLEL_API_KEY` or `GEMINI_API_KEY` are absent, the report explicitly states `DEGRADED RUN — ...` and sets status to degraded.
+
+### 5. Critical Reconciliations Needed Before Submission (Melvin's Warning)
+Melvin highlighted two discrepancies that human judges will spot immediately if not fixed:
+1. **Naming Mismatch**:
+   - Frontend: **Lumen**
+   - Backend repo: **Agentic Cinema Detective** (and backend `README.md` still describes a TV-episode post-mortem!).
+   - **Action**: Align backend README to describe **Lumen / Pre-Mortem Flight Simulator**.
+2. **Cloud Stack Claim Mismatch**:
+   - Frontend About page advertises: *Vertex AI Pipelines, BigQuery ML, Cloud Storage, and Cloud Run prediction API*.
+   - Reality: Frontend runs on Cloud Run, but backend prediction API uses **Gemini API via Google ADK**, **scikit-learn Ridge joblib on disk**, and **FastAPI**.
+   - **Action**: Align the frontend About page and architecture docs to honestly reflect the Google ADK + Cloud Run + Gemini architecture.

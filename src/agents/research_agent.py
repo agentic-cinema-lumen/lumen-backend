@@ -152,11 +152,11 @@ class ResearchAgent:
 
     # ------------------------------------------------------------------ agent
 
-    def build_loop(self, search_tool: Callable):
+    def build_loop(self, search_tool: Callable, on_event: Optional[Callable] = None):
         """The bounded research loop: one LlmAgent, at most `max_iterations` passes."""
         from google.adk.agents import LlmAgent, LoopAgent
 
-        log = ToolEventLog()
+        log = ToolEventLog(on_event=on_event)
         researcher = LlmAgent(
             name="research_agent",
             model=self.model,
@@ -175,9 +175,11 @@ class ResearchAgent:
         loop._lumen_tool_log = log  # tests and the orchestrator read the events off this
         return loop
 
-    def _invoke(self, prompt: str, search_tool: Callable) -> List[ResearchOutput]:
+    def _invoke(
+        self, prompt: str, search_tool: Callable, on_event: Optional[Callable] = None
+    ) -> List[ResearchOutput]:
         """One ADK run; returns the structured output of every loop iteration."""
-        loop = self.build_loop(search_tool)
+        loop = self.build_loop(search_tool, on_event=on_event)
         raw = run_agent(loop, prompt, OUTPUT_KEY)
         self._tool_events = list(loop._lumen_tool_log.events)
         return [ResearchOutput(**r) if isinstance(r, dict) else r for r in raw]
@@ -190,6 +192,7 @@ class ResearchAgent:
         risk_flags: Optional[List[Dict[str, Any]]] = None,
         genre: Optional[str] = None,
         title: str = "Untitled Submission",
+        on_event: Optional[Callable[[str, Dict[str, Any]], None]] = None,
     ) -> Dict[str, Any]:
         retrieved: Dict[str, str] = {}
         queries: List[str] = []
@@ -203,7 +206,11 @@ class ResearchAgent:
         else:
             tool = self._search_tool(retrieved, queries, mocked)
             try:
-                outputs = self._invoke(self._prompt(premise, risk_flags or [], genre, title), tool)
+                outputs = self._invoke(
+                    self._prompt(premise, risk_flags or [], genre, title),
+                    tool,
+                    on_event=on_event,
+                )
             except Exception as exc:  # a failed Gemini call degrades the run
                 reasons.append(f"research agent call failed: {type(exc).__name__}: {exc}".strip(": "))
                 outputs = []

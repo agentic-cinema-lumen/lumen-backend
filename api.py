@@ -15,20 +15,22 @@ import tempfile
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, AsyncGenerator, Callable, Dict, List, Literal, Optional
 
 import requests
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field, field_validator
 
 from src.agents import response_mapping as M
 from src.ingestion.script_parser import ScriptParser, validate_screenplay
 from src.utils.env_helper import load_env_file
+from src.utils.event_bus import get_event_bus
 from src.premortem.premortem_agent import PreMortemAgent
+from src.quant.benchmarks import get_benchmark_movie, list_benchmark_movies
 from src.quant.quant_agent import QuantAgent
 
 load_env_file()  # PARALLEL_API_KEY / GEMINI_API_KEY, else the engine runs on mock search
@@ -153,7 +155,10 @@ def _fetch_materials(materials: List[Material], workdir: Path):
     return script_text, (str(images) if any(images.iterdir()) else None)
 
 
-def run_engine(req: PredictionRequest) -> Dict[str, Any]:
+def run_engine(
+    req: PredictionRequest,
+    on_event: Optional[Callable[[str, Dict[str, Any]], None]] = None,
+) -> Dict[str, Any]:
     """Fetch the materials, gate the screenplay, run the orchestrated pre-mortem."""
     with tempfile.TemporaryDirectory() as tmp:
         script_text, keyframes = _fetch_materials(req.materials, Path(tmp))
@@ -172,6 +177,7 @@ def run_engine(req: PredictionRequest) -> Dict[str, Any]:
             title=title,
             medium=req.medium,
             target_geography=req.targetGeography,
+            on_event=on_event,
         )
 
 
@@ -231,11 +237,85 @@ def _to_response(report: Dict[str, Any], req: PredictionRequest) -> PredictionRe
 
 
 
+async def _to_thread(func, /, *args, **kwargs):
+    """Compatible with Python 3.8+ (asyncio.to_thread was added in 3.9)."""
+    if hasattr(asyncio, "to_thread"):
+        return await asyncio.to_thread(func, *args, **kwargs)
+    import functools
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
+
+
 @app.post("/v1/predictions", response_model=PredictionResponse)
 async def create_prediction(req: PredictionRequest) -> PredictionResponse:
     # ponytail: engine is sync, so one thread per request; add a queue if it saturates
-    report = await asyncio.to_thread(run_engine, req)
+    report = await _to_thread(run_engine, req)
     return _to_response(report, req)
+
+
+async def _execute_streaming(req: PredictionRequest, prediction_id: uuid.UUID) -> None:
+    event_bus = get_event_bus()
+    pid = str(prediction_id)
+
+    def _bus_emit(event_type: str, data: Dict[str, Any]) -> None:
+        event_bus.publish(pid, event_type, data)
+
+    try:
+        _bus_emit("stage", {"stage": "started", "label": "Initiating pre-mortem investigation...", "progress": 0.05})
+        report = await _to_thread(run_engine, req, _bus_emit)
+        response = _to_response(report, req)
+        response.predictionId = prediction_id
+        response_dict = jsonable_encoder(response)
+        _bus_emit("complete", response_dict)
+    except HTTPException as exc:
+        _bus_emit("error", {"status_code": exc.status_code, "detail": exc.detail})
+    except Exception as exc:
+        _bus_emit("error", {"status_code": 500, "detail": str(exc)})
+
+
+async def _stream_generator(req: PredictionRequest, prediction_id: uuid.UUID) -> AsyncGenerator[str, None]:
+    event_bus = get_event_bus()
+    pid = str(prediction_id)
+    exec_task = asyncio.create_task(_execute_streaming(req, prediction_id))
+
+    async for chunk in event_bus.sse_generator(pid, timeout_sec=120.0):
+        yield chunk
+
+    try:
+        await exec_task
+    except Exception:
+        pass
+
+
+@app.post("/v1/predictions/stream")
+async def create_prediction_stream(req: PredictionRequest) -> StreamingResponse:
+    """Execute pre-mortem and stream real-time events over SSE, ending with the complete report."""
+    prediction_id = uuid.uuid4()
+    return StreamingResponse(
+        _stream_generator(req, prediction_id),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Prediction-ID": str(prediction_id),
+        },
+    )
+
+
+@app.get("/v1/predictions/{prediction_id}/events")
+async def stream_prediction_events(prediction_id: uuid.UUID) -> StreamingResponse:
+    """Stream live events or replay event history for a prediction ID."""
+    pid = str(prediction_id)
+    event_bus = get_event_bus()
+    return StreamingResponse(
+        event_bus.sse_generator(pid, timeout_sec=120.0),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Prediction-ID": pid,
+        },
+    )
 
 
 @app.get("/v1/diagnostics/model", response_model=ModelDiagnostics)
@@ -262,3 +342,19 @@ def model_diagnostics() -> ModelDiagnostics:
             calibrationError=m.get("cv_rmse"),
         ),
     )
+
+
+@app.get("/v1/benchmarks")
+def get_benchmarks(featured: bool = False) -> Dict[str, Any]:
+    """List 100 genuine cinema benchmarks with pre-extracted craft features."""
+    movies = list_benchmark_movies(featured_only=featured)
+    return {"count": len(movies), "movies": movies}
+
+
+@app.get("/v1/benchmarks/{slug}")
+def get_benchmark_detail(slug: str) -> Dict[str, Any]:
+    """Get full pre-mortem evaluation, feature attributions, and 15-point counterfactual sweep for a benchmark movie."""
+    movie = get_benchmark_movie(slug)
+    if not movie:
+        raise HTTPException(status_code=404, detail=f"Benchmark movie '{slug}' not found.")
+    return movie

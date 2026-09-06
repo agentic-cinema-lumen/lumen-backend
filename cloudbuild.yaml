@@ -1,0 +1,47 @@
+# ==============================================================================
+# Google Cloud Build — Automated Build & Deploy to Cloud Run (europe-north1)
+# ==============================================================================
+steps:
+  # Step 1: Build the container image with commit SHA & latest tags
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/lumen-api:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/lumen-api:latest'
+      - '.'
+
+  # Step 2: Push the image to Container / Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/lumen-api:$COMMIT_SHA'
+
+  # Step 3: Deploy to Google Cloud Run in europe-north1
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'lumen-api'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/lumen-api:$COMMIT_SHA'
+      - '--region'
+      - 'europe-north1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '2Gi'
+      - '--cpu'
+      - '2'
+      - '--timeout'
+      - '300s'
+
+images:
+  - 'gcr.io/$PROJECT_ID/lumen-api:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/lumen-api:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
