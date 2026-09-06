@@ -136,7 +136,8 @@ class ResearchAgent:
             """
             queries.append(query)
             raw = client.search(query, num_results=num_results)
-            mocked.append(raw.get("_source") == "smart_mock")
+            # a cached mock is still a mock: check the payload flag, not just _source
+            mocked.append(bool(raw.get("_mock")) or raw.get("_source") == "smart_mock")
             results = []
             for item in raw.get("results", []):
                 url = item.get("url")
@@ -204,7 +205,7 @@ class ResearchAgent:
             try:
                 outputs = self._invoke(self._prompt(premise, risk_flags or [], genre, title), tool)
             except Exception as exc:  # a failed Gemini call degrades the run
-                reasons.append(f"research agent call failed: {exc}")
+                reasons.append(f"research agent call failed: {type(exc).__name__}: {exc}".strip(": "))
                 outputs = []
 
         claims: List[Claim] = []

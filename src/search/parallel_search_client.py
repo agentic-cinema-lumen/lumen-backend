@@ -50,6 +50,9 @@ class ParallelSearchClient:
                 with open(cache_file, "r", encoding="utf-8") as f:
                     cached_data = json.load(f)
                     cached_data["_source"] = "disk_cache"
+                    # `_mock` is written into the cached payload, so a cache hit
+                    # on a mocked result still reports itself as mocked. Without
+                    # it, replaying the cache silently launders canned output.
                     return cached_data
             except Exception:
                 pass
@@ -58,6 +61,7 @@ class ParallelSearchClient:
             try:
                 data = self._call_live_parallel_api(query, num_results)
                 data["_source"] = "parallel_api"
+                data["_mock"] = False
                 # Cache response
                 with open(cache_file, "w", encoding="utf-8") as f:
                     json.dump(data, f, indent=2)
@@ -68,6 +72,7 @@ class ParallelSearchClient:
         # Fallback to realistic mock search engine
         mock_data = self._generate_smart_mock_results(query, num_results)
         mock_data["_source"] = "smart_mock"
+        mock_data["_mock"] = True
         try:
             with open(cache_file, "w", encoding="utf-8") as f:
                 json.dump(mock_data, f, indent=2)

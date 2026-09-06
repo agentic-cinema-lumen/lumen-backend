@@ -150,6 +150,22 @@ def test_mocked_search_is_reported_as_degraded():
     assert any("mock" in r.lower() for r in out["degradation_reasons"])
 
 
+def test_a_cached_mock_still_reports_as_mocked():
+    """Replaying the cache must not launder canned output into a clean run."""
+    class _CachedMock(_StubSearch):
+        def search(self, query, num_results=5):
+            return {"query": query, "results": SEARCH_RESULTS["results"],
+                    "_source": "disk_cache", "_mock": True}
+
+    def invoke(prompt, tool):
+        tool("q")
+        return [ResearchOutput(**AGENT_OUTPUT)]
+
+    out = _agent(_CachedMock(), invoke).run(premise="x", risk_flags=[])
+    assert out["degraded"]
+    assert any("mock" in r.lower() for r in out["degradation_reasons"])
+
+
 def test_failed_llm_call_degrades_instead_of_raising():
     def invoke(prompt, tool):
         raise RuntimeError("429 RESOURCE_EXHAUSTED")

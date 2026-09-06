@@ -133,7 +133,7 @@ class SynthesisAgent:
                 if report is None:
                     reasons.append("synthesis agent produced no structured output")
             except Exception as exc:
-                reasons.append(f"synthesis agent call failed: {exc}")
+                reasons.append(f"synthesis agent call failed: {type(exc).__name__}: {exc}".strip(": "))
 
         if report is not None:
             prose = " ".join(
