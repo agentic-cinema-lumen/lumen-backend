@@ -19,17 +19,17 @@
   "script_metrics": {
     "title": "Saving Private Ryan",
     "total_scenes": 64,
-    "total_words": 20826,
-    "dialogue_words": 10457,
-    "action_words": 10369,
-    "dialogue_ratio": 0.502,
-    "estimated_duration_min": 149.4,
-    "estimated_duration_sec": 8966.5,
-    "estimated_total_shots": 2330,
-    "cuts_per_minute": 15.59,
-    "words_per_minute": 70.0,
-    "climax_acceleration": 1.352,
-    "characters_count": 94,
+    "total_words": 20828,
+    "dialogue_words": 10443,
+    "action_words": 10385,
+    "dialogue_ratio": 0.501,
+    "estimated_duration_min": 112.0,
+    "estimated_duration_sec": 6718.7,
+    "estimated_total_shots": 1743,
+    "cuts_per_minute": 15.57,
+    "words_per_minute": 93.3,
+    "climax_acceleration": 1.359,
+    "characters_count": 93,
     "characters": [
       "0600 HOURS",
       "A CLERK",
@@ -49,7 +49,6 @@
       "BOMBED OUT BUILDING",
       "BULLETS EVERYWHERE",
       "CAMERA CRANES UP",
-      "CLOSE SHOT",
       "COLONEL ANDERSON",
       "EXPLOSIONS EVERYWHERE",
       "FIRE THE EIGHTY-EIGHT",
@@ -125,6 +124,9 @@
       "UPHAM",
       "VOICE FROM BRIDGE",
       "WADE"
+    ],
+    "validation_errors": [
+      "implausible character count: 93 (expected 3-80)"
     ]
   },
   "cv_metrics": {

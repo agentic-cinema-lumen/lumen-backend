@@ -22,11 +22,11 @@
     "dialogue_words": 5317,
     "action_words": 13234,
     "dialogue_ratio": 0.287,
-    "estimated_duration_min": 129.1,
-    "estimated_duration_sec": 7743.8,
-    "estimated_total_shots": 2037,
+    "estimated_duration_min": 99.7,
+    "estimated_duration_sec": 5984.2,
+    "estimated_total_shots": 1574,
     "cuts_per_minute": 15.78,
-    "words_per_minute": 41.2,
+    "words_per_minute": 53.3,
     "climax_acceleration": 1.0,
     "characters_count": 20,
     "characters": [
@@ -50,6 +50,9 @@
       "THROUGH THE WINDOW-",
       "TRANSMISSION",
       "UNITY NODE 2-"
+    ],
+    "validation_errors": [
+      "too few scenes: 1 (expected >= 4)"
     ]
   },
   "cv_metrics": {

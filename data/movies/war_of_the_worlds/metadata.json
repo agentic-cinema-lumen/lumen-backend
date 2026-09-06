@@ -18,19 +18,23 @@
   "real_stills_count": 6,
   "script_metrics": {
     "title": "War of the Worlds",
-    "total_scenes": 34,
-    "total_words": 16567,
+    "total_scenes": 39,
+    "total_words": 16525,
     "dialogue_words": 0,
-    "action_words": 16567,
+    "action_words": 16525,
     "dialogue_ratio": 0.0,
-    "estimated_duration_min": 110.4,
-    "estimated_duration_sec": 6626.8,
-    "estimated_total_shots": 1733,
-    "cuts_per_minute": 15.69,
+    "estimated_duration_min": 88.8,
+    "estimated_duration_sec": 5330.6,
+    "estimated_total_shots": 1385,
+    "cuts_per_minute": 15.59,
     "words_per_minute": 0.0,
-    "climax_acceleration": 0.524,
+    "climax_acceleration": 0.408,
     "characters_count": 0,
-    "characters": []
+    "characters": [],
+    "validation_errors": [
+      "implausible character count: 0 (expected 3-80)",
+      "implausible dialogue ratio: 0.0 (expected 0.10-0.85)"
+    ]
   },
   "cv_metrics": {
     "mean_luminance": 69.24,

@@ -43,7 +43,7 @@ def get_corpus_genre_priors(movies_dir: str = "data/movies") -> Dict[str, Any]:
         with open(manifest_path, "r", encoding="utf-8") as f:
             manifest = json.load(f)
         for m in manifest:
-            if not m.get("has_script") or not m.get("script_metrics"):
+            if not _trainable(m):
                 continue
             by_genre.setdefault(primary_genre(m.get("genre")), []).append(float(m["imdb_rating"]))
 
@@ -327,6 +327,15 @@ def load_local_data_episodes(data_root: str = "data") -> List[Dict[str, Any]]:
     return episodes
 
 
+def _trainable(m: Dict[str, Any]) -> bool:
+    """A manifest entry is trainable only if its script parsed into valid screenplay
+    metrics. ponytail: validate_screenplay() reasons are cached on the metrics by
+    scripts/reextract_script_metrics.py, so no re-parse is needed here.
+    Excluded slugs are enumerated in data/models/ml_decision_history.md."""
+    sm = m.get("script_metrics")
+    return bool(m.get("has_script") and sm and not sm.get("validation_errors"))
+
+
 def load_movie_corpus(movies_dir: str = "data/movies") -> List[Dict[str, Any]]:
     """Load screenplays from data/movies/movies_manifest.json into training records."""
     manifest_path = Path(movies_dir) / "movies_manifest.json"
@@ -344,7 +353,7 @@ def load_movie_corpus(movies_dir: str = "data/movies") -> List[Dict[str, Any]]:
 
     movies = []
     for m in manifest:
-        if not m.get("has_script") or not m.get("script_metrics"):
+        if not _trainable(m):
             continue
         sm = m["script_metrics"]
         cpm = float(sm.get("cuts_per_minute", 15.0))

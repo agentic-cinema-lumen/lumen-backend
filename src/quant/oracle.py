@@ -129,8 +129,8 @@ class QuantOracle:
         expected_rating = float(self.model.predict_expected_rating(populated_features))
         residual_delta = round(expected_rating - genre_baseline, 2)
 
-        # 2. Confidence Interval (Out-of-sample CV MAE is ~0.44)
-        mae = self.model.metrics.get("cv_mae", 0.441)
+        # 2. Confidence Interval (Out-of-sample CV MAE is ~0.50)
+        mae = self.model.metrics.get("cv_mae", 0.498)
         ci_lower = round(max(1.0, expected_rating - mae), 2)
         ci_upper = round(min(10.0, expected_rating + mae), 2)
 
@@ -485,15 +485,16 @@ class QuantOracle:
     def get_decision_summary(self) -> str:
         """Return a concise summary of the ML agent's design decisions for LLM prompting."""
         return (
-            "The Champion Quant Residual Model is a Ridge Regression (alpha=10.0, CV MAE: 0.464, CV RMSE: 0.638, CV R2: -0.035) "
-            "trained on 100 genuine feature films (screenplays + 752 Film-Grab stills) with zero target leakage. "
+            "The Champion Quant Residual Model is a Ridge Regression (alpha=10.0, CV MAE: 0.498, CV RMSE: 0.673, CV R2: -0.116) "
+            "trained on 80 genuine feature films (screenplays + Film-Grab stills) with zero target leakage; the other "
+            "20 of the 100-film corpus fail validate_screenplay() and are excluded. "
             "It isolates pre-production craft residuals (Rating_actual - Rating_expected) against a genre prior "
-            "computed from the same 100-film corpus (shrunk toward the corpus mean of 7.80), so a median film "
+            "computed from the same training corpus (shrunk toward the corpus mean of 7.80), so a median film "
             "in any genre scores as baseline-aligned rather than exceptional. Coefficient magnitudes rank: "
             "(1) genre baseline anchor, (2) mean luminance, (3) runtime scope, (4) cutting tempo, "
             "(5) luminance spread, then pacing acceleration and dark frame ratio. Note the honest caveat: "
-            "out-of-sample CV R2 is -0.035, so every craft effect this model reports on a single film falls "
-            "inside the +/-0.46 error bar. Direction of the darkness effect is defensible; magnitude is not."
+            "out-of-sample CV R2 is -0.116, so every craft effect this model reports on a single film falls "
+            "inside the +/-0.50 error bar. Direction of the darkness effect is defensible; magnitude is not."
         )
 
 

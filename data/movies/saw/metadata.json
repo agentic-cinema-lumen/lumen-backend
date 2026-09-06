@@ -19,23 +19,22 @@
   "script_metrics": {
     "title": "Saw",
     "total_scenes": 1,
-    "total_words": 24325,
-    "dialogue_words": 11979,
-    "action_words": 12346,
-    "dialogue_ratio": 0.492,
-    "estimated_duration_min": 174.3,
-    "estimated_duration_sec": 10458.7,
-    "estimated_total_shots": 2752,
+    "total_words": 24331,
+    "dialogue_words": 11846,
+    "action_words": 12485,
+    "dialogue_ratio": 0.487,
+    "estimated_duration_min": 130.8,
+    "estimated_duration_sec": 7848.7,
+    "estimated_total_shots": 2065,
     "cuts_per_minute": 15.79,
-    "words_per_minute": 68.7,
+    "words_per_minute": 90.6,
     "climax_acceleration": 1.0,
-    "characters_count": 19,
+    "characters_count": 18,
     "characters": [
       "ADAM",
       "ALISON",
       "AMANDA",
       "CARLA",
-      "CUT TO",
       "DIANA",
       "INTERCOM",
       "JIGSAW",
@@ -50,6 +49,9 @@
       "TAPP",
       "VOICE",
       "ZEP"
+    ],
+    "validation_errors": [
+      "too few scenes: 1 (expected >= 4)"
     ]
   },
   "cv_metrics": {

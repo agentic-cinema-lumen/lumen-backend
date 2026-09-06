@@ -19,17 +19,17 @@
   "script_metrics": {
     "title": "Forrest Gump",
     "total_scenes": 194,
-    "total_words": 23415,
-    "dialogue_words": 6788,
-    "action_words": 16627,
-    "dialogue_ratio": 0.29,
-    "estimated_duration_min": 163.1,
-    "estimated_duration_sec": 9788.2,
-    "estimated_total_shots": 2494,
-    "cuts_per_minute": 15.29,
-    "words_per_minute": 41.6,
-    "climax_acceleration": 1.733,
-    "characters_count": 96,
+    "total_words": 23425,
+    "dialogue_words": 6654,
+    "action_words": 16771,
+    "dialogue_ratio": 0.284,
+    "estimated_duration_min": 126.1,
+    "estimated_duration_sec": 7568.8,
+    "estimated_total_shots": 1924,
+    "cuts_per_minute": 15.25,
+    "words_per_minute": 52.7,
+    "climax_acceleration": 1.754,
+    "characters_count": 94,
     "characters": [
       "1ST PLAYER",
       "1ST REPORTER",
@@ -64,7 +64,6 @@
       "DEAN",
       "DICK CAVETT",
       "DICK CLARK",
-      "DJ",
       "DOCTOR",
       "DRILL SERGEANT",
       "DRIVER",
@@ -116,7 +115,6 @@
       "SCHOOLD BUS DRIVER",
       "SECURITY GUARD",
       "SOLDIER",
-      "SOLDIER WITH BIG MACHINE GUN",
       "SONG",
       "STRONGARM",
       "SUSAN",
@@ -127,6 +125,9 @@
       "YOUNG HIPPIE",
       "YOUNG MAN",
       "YOUNG PRIVATE"
+    ],
+    "validation_errors": [
+      "implausible character count: 94 (expected 3-80)"
     ]
   },
   "cv_metrics": {

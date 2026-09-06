@@ -21,8 +21,8 @@ from src.quant.model_trainer import QuantResidualModel, FEATURE_COLUMNS
 from src.quant.quant_agent import QuantAgent
 
 
-# Champion cv_r2 recorded after the genre-prior retrain (slice 3).
-RECORDED_CHAMPION_CV_R2 = -0.035
+# Champion cv_r2 recorded after the fixed-parser re-extraction retrain (slice 3b).
+RECORDED_CHAMPION_CV_R2 = -0.116
 
 
 class TestQuantResidualEngine(unittest.TestCase):
@@ -154,9 +154,10 @@ class TestQuantResidualEngine(unittest.TestCase):
     def test_08_champion_cv_r2_regression_guard(self):
         """Loose regression guard on the champion model's cv_r2.
 
-        This guards against *collapse*, not quality. At n=100 the fold-driven
-        swing in cv_r2 is roughly +/-0.7, so no single value here is a
-        trustworthy measure of model quality. The floor is the recorded
+        This guards against *collapse*, not quality. At n=80 the fold-driven
+        swing in ridge cv_r2 spans -0.116 to +0.061 across KFold seeds
+        0/1/2/42, so no single value here is a trustworthy measure of model
+        quality. The floor is the recorded
         post-retrain value minus 0.15: it fires when the training data or the
         feature pipeline breaks, and stays silent for ordinary fold noise.
         """

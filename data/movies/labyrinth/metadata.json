@@ -18,19 +18,23 @@
   "real_stills_count": 6,
   "script_metrics": {
     "title": "Labyrinth",
-    "total_scenes": 1,
-    "total_words": 20513,
+    "total_scenes": 92,
+    "total_words": 20004,
     "dialogue_words": 0,
-    "action_words": 20513,
+    "action_words": 20004,
     "dialogue_ratio": 0.0,
-    "estimated_duration_min": 136.8,
-    "estimated_duration_sec": 8205.2,
-    "estimated_total_shots": 2159,
-    "cuts_per_minute": 15.79,
+    "estimated_duration_min": 107.6,
+    "estimated_duration_sec": 6454.1,
+    "estimated_total_shots": 1654,
+    "cuts_per_minute": 15.38,
     "words_per_minute": 0.0,
-    "climax_acceleration": 1.0,
+    "climax_acceleration": 1.637,
     "characters_count": 0,
-    "characters": []
+    "characters": [],
+    "validation_errors": [
+      "implausible character count: 0 (expected 3-80)",
+      "implausible dialogue ratio: 0.0 (expected 0.10-0.85)"
+    ]
   },
   "cv_metrics": {
     "mean_luminance": 50.0,

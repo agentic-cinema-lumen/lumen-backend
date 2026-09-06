@@ -23,11 +23,11 @@
     "dialogue_words": 9998,
     "action_words": 1268,
     "dialogue_ratio": 0.887,
-    "estimated_duration_min": 85.2,
-    "estimated_duration_sec": 5114.6,
-    "estimated_total_shots": 1345,
+    "estimated_duration_min": 60.6,
+    "estimated_duration_sec": 3634.2,
+    "estimated_total_shots": 956,
     "cuts_per_minute": 15.78,
-    "words_per_minute": 117.3,
+    "words_per_minute": 165.1,
     "climax_acceleration": 1.0,
     "characters_count": 65,
     "characters": [
@@ -96,6 +96,10 @@
       "TURTLE KID 5",
       "TURTLE KID 6",
       "TURTLE KIDS"
+    ],
+    "validation_errors": [
+      "too few scenes: 1 (expected >= 4)",
+      "implausible dialogue ratio: 0.887 (expected 0.10-0.85)"
     ]
   },
   "cv_metrics": {
