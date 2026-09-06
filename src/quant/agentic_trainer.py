@@ -189,7 +189,7 @@ Respond ONLY with a JSON object in this format:
         applied = 0
         safe_env = {"np": np}
         for col in self.dataset.columns:
-            if np.issubdtype(self.dataset[col].dtype, np.number):
+            if pd.api.types.is_numeric_dtype(self.dataset[col]):
                 safe_env[col] = self.dataset[col]
 
         for feat in proposed_features:
