@@ -1,0 +1,31 @@
+{
+  "summary": "Two independently measured signals agree that this submission sits at the dark end of the corpus, and the precedent research says that darkness of this kind is forgiven when it reads as authorship rather than accident. The model's own counterfactuals move the projected rating by less than its error bar, so treat the direction as the finding and the magnitude as noise.",
+  "findings": [
+    {
+      "slot": "story",
+      "finding": "The screenplay parses cleanly and the projected rating sits close to the genre prior. The residual is well inside the error bar, so the craft signal here is a direction, not a number."
+    },
+    {
+      "slot": "visual",
+      "finding": "The frames measure consistently dark with a narrow luminance spread. That is a measurement, not yet a defect."
+    },
+    {
+      "slot": "audience",
+      "finding": "Craft precedent splits: streaming compression punished one comparable's underexposure, while another's murk is defended as deliberate authorship. The distinguishing factor is whether the darkness reads as intentional."
+    },
+    {
+      "slot": "market",
+      "finding": "The unreliable-narrator conceit is described by audiences as the most predicted twist of the decade, which is a positioning risk rather than a craft one."
+    }
+  ],
+  "recommendations": [
+    {
+      "text": "Do not brighten on the model's advice; the counterfactual is inside the noise floor. Decide it on the precedent instead.",
+      "feature": "dark_frame_ratio"
+    },
+    {
+      "text": "Signal the narrator's unreliability earlier so the reveal is not the load-bearing surprise.",
+      "feature": "none"
+    }
+  ]
+}
