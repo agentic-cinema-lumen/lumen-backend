@@ -1,0 +1,104 @@
+"""Shared ADK plumbing: model selection, a synchronous runner, tool-event capture.
+
+The ADK server is not used; `api.py` stays the HTTP surface. These helpers run an
+ADK agent once, synchronously, and hand back every structured output it produced.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import os
+import uuid
+from typing import Any, Callable, Dict, List, Optional
+
+from google.genai import types
+
+from src.utils.env_helper import load_env_file
+
+load_env_file()
+
+APP_NAME = "lumen-premortem"
+
+# ADK reads GOOGLE_API_KEY; the repo's .env has always carried GEMINI_API_KEY.
+if os.environ.get("GEMINI_API_KEY") and not os.environ.get("GOOGLE_API_KEY"):
+    os.environ["GOOGLE_API_KEY"] = os.environ["GEMINI_API_KEY"]
+
+
+def agent_model() -> str:
+    """Gemini model for both subagents.
+
+    Overridable because the free tier meters requests *per model per day*, so a
+    demo run that has exhausted one model can move to another without a code
+    change.
+    """
+    return os.environ.get("LUMEN_AGENT_MODEL", "gemini-3.6-flash")
+
+
+def has_gemini_key() -> bool:
+    return bool(os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY"))
+
+
+class ToolEventLog:
+    """Collects per-tool-call events via ADK's before/after tool callbacks.
+
+    ponytail: the events are returned in the report rather than streamed. The
+    contract is submit-once, so `POST /v1/predictions` has nowhere to stream
+    them; wiring them to SSE is a follow-up owned with the frontend.
+    """
+
+    def __init__(self) -> None:
+        self.events: List[Dict[str, Any]] = []
+
+    def before(self, tool, args, tool_context):  # ADK callback signature
+        self.events.append({"phase": "tool_start", "tool": tool.name, "args": dict(args)})
+        return None
+
+    def after(self, tool, args, tool_context, tool_response):
+        self.events.append({
+            "phase": "tool_end",
+            "tool": tool.name,
+            "args": dict(args),
+            "result_count": len((tool_response or {}).get("results", []))
+            if isinstance(tool_response, dict) else None,
+        })
+        return None
+
+
+def run_agent(agent, prompt: str, output_key: str) -> List[Any]:
+    """Run an ADK agent to completion and return every value it wrote to `output_key`.
+
+    A LoopAgent overwrites session state on each iteration, so the outputs are
+    read off the event stream instead of out of the final session.
+    """
+    from google.adk.runners import InMemoryRunner
+
+    runner = InMemoryRunner(agent=agent, app_name=APP_NAME)
+    session_id = str(uuid.uuid4())
+    asyncio.run(
+        runner.session_service.create_session(
+            app_name=APP_NAME, user_id="lumen", session_id=session_id
+        )
+    )
+    outputs: List[Any] = []
+    message = types.Content(role="user", parts=[types.Part(text=prompt)])
+    for event in runner.run(user_id="lumen", session_id=session_id, new_message=message):
+        delta = getattr(event.actions, "state_delta", None) if event.actions else None
+        if delta and output_key in delta:
+            outputs.append(delta[output_key])
+    return outputs
+
+
+def stop_after_output(state_key: str) -> Callable:
+    """after_agent_callback that ends a LoopAgent once the agent has answered.
+
+    ADK only honours `escalate` when it rides on a yielded event, and the
+    callback yields one only if it returns content or leaves a state delta — so
+    this writes a marker as well as setting the flag.
+    """
+
+    def _callback(callback_context):
+        callback_context.state[state_key] = True
+        callback_context.actions.escalate = True
+        return None
+
+    return _callback
