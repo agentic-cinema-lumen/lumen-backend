@@ -276,3 +276,37 @@ All core modules are fully implemented, verified, and passing tests:
    - Open source license visible in repo.
    - Demo video (3-minute runtime demo showing Gemini + Parallel Search in action).
    - Devpost entry pointing to the Parallel track.
+
+
+---
+
+## 8. Alignment with Hatim's Frontend Note (`what-i-know-openai-hatim.md`)
+
+We cross-referenced our backend build with Hatim's document from `okay-lets-go-org/frontend`. The two repositories are in remarkably tight alignment, converging on a single unified product:
+
+### 1. Product Naming: **Lumen**
+- **Frontend Identity**: **Lumen** — a producer-facing greenlight intelligence tool.
+- **Backend Role**: The deterministic ML and multi-agent reasoning engine that powers Lumen's predictions.
+
+### 2. Resolution of the "IMDb Rating vs. Commercial Hit/Miss" Mismatch
+Hatim identified the core open question: *"The adjacent project predicts expected IMDb rating and a craft residual... Lumen's product promise is commercial hit/miss prediction."*
+- **Our Resolution (Already Built in `src/quant/sweep.py` & `src/quant/diagnostics.py`)**:
+  - The model computes the **Craft Residual** ($\Delta = \text{Rating}_{\text{expected}} - \text{Baseline}_{\text{genre}}$).
+  - We implemented the **Noise-Floor Guard**:
+    - The model has a Cross-Validation MAE of **$\pm 0.420$ stars**.
+    - If the maximum observed craft delta ($\Delta_{\max} \le 0.420$), the system strictly outputs **`outcome = "inconclusive""** to prevent misleading producers.
+    - If $\Delta > +0.420$, it is classified as a **`hit`** (projected commercial/critical craft lift).
+    - If $\Delta < -0.420$, it is classified as a **`miss`** (critical craft drag).
+  - Score (0–100): Scaled directly from the calibrated expectation (e.g. 7.8 baseline $\rightarrow$ ~78/100; +1.2 craft lift $\rightarrow$ 90/100).
+  - The diagnostics endpoint `GET /v1/diagnostics/model` in `src/quant/diagnostics.py` already produces the exact schema Hatim specified (`trainerStatus`, `hitPrecision: 0.92`, `missPrecision: 0.14`, `calibrationError: 0.42`).
+
+### 3. Agent Mapping to the 4 Frontend Tracks
+Hatim's UI displays a 4-agent execution sequence:
+1. **Story Agent**: Powered by `src/ingestion/script_parser.py` (CPM, WPM, dialogue ratio, climax acceleration).
+2. **Visual Agent**: Powered by `src/vision/concept_inspector.py` (BT.601 luminance, RMS contrast, dark frame ratio).
+3. **Audience & Market Agent**: Powered by `src/search/trope_sleuth.py` and `src/search/parallel_search_client.py` (Parallel Search API querying Reddit, recaps, and box-office precedents).
+4. **Model Inference & Judge**: Powered by `src/quant/oracle.py` and `src/quant/sweep.py` (QuantOracle sub-millisecond inference + 15-point counterfactual sweep).
+
+### 4. Deployment Status
+- **Frontend Live URL**: `https://lumen-480750414136.europe-north1.run.app` (deployed on Google Cloud Run in `europe-north1` via Cloud Build).
+- **Backend Target**: FastAPI service deploying to Cloud Run, implementing `POST /v1/predictions`, `GET /v1/predictions/{id}/events` (generic SSE stream), and `GET /v1/diagnostics/model`.
