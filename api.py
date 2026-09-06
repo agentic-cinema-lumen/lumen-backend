@@ -10,6 +10,7 @@ Run: uvicorn api:app --port 8787 --reload
 from __future__ import annotations
 
 import asyncio
+import base64
 import tempfile
 import uuid
 from datetime import datetime, timezone
@@ -17,9 +18,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional
 
 import requests
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, HttpUrl
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field, field_validator
 
 from src.utils.env_helper import load_env_file
 from src.premortem.premortem_agent import PreMortemAgent
@@ -33,9 +37,16 @@ MAX_MATERIAL_BYTES = 20 * 1024 * 1024
 
 class Material(BaseModel):
     kind: Literal["script", "frame", "cast", "concept_art", "trailer", "other"]
-    uri: HttpUrl
+    uri: str  # contract says format: uri, which admits data: alongside http(s):
     mimeType: str
     sha256: Optional[str] = None
+
+    @field_validator("uri")
+    @classmethod
+    def _known_scheme(cls, v: str) -> str:
+        if v.split(":", 1)[0].lower() not in ("http", "https", "data"):
+            raise ValueError("uri scheme must be http, https or data")
+        return v
 
 
 class PredictionRequest(BaseModel):
@@ -96,6 +107,14 @@ app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
 
+
+
+@app.exception_handler(RequestValidationError)
+async def _invalid_submission(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """The contract calls invalid submissions 400, not FastAPI's default 422."""
+    return JSONResponse(status_code=400, content={"detail": jsonable_encoder(exc.errors())})
+
+
 _agent = PreMortemAgent()
 _quant = QuantAgent()
 
@@ -109,13 +128,20 @@ def _fetch_materials(materials: List[Material], workdir: Path):
         if m.kind not in ("script", "frame", "concept_art"):
             continue
         try:
-            r = requests.get(str(m.uri), timeout=20, stream=True)
-            r.raise_for_status()
-            body = r.raw.read(MAX_MATERIAL_BYTES + 1)
+            if m.uri.startswith("data:"):
+                # ponytail: inline decode; the studio posts picked files as base64 data: URIs
+                header, _, payload = m.uri.partition(",")
+                if not header.endswith(";base64"):
+                    raise ValueError("only base64 data: URIs are supported")
+                body = base64.b64decode(payload, validate=True)
+            else:
+                r = requests.get(m.uri, timeout=20, stream=True)
+                r.raise_for_status()
+                body = r.raw.read(MAX_MATERIAL_BYTES + 1)
         except Exception:
             continue  # a broken material degrades the run, it doesn't fail it
         if len(body) > MAX_MATERIAL_BYTES:
-            raise HTTPException(413, f"Material {m.uri} exceeds {MAX_MATERIAL_BYTES} bytes")
+            raise HTTPException(413, f"Material {m.uri[:80]} exceeds {MAX_MATERIAL_BYTES} bytes")
         if m.kind == "script":
             if script_text is None:
                 script_text = body.decode("utf-8", errors="replace")
