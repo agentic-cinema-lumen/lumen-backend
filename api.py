@@ -25,6 +25,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
+from src.agents import response_mapping as M
 from src.ingestion.script_parser import ScriptParser, validate_screenplay
 from src.utils.env_helper import load_env_file
 from src.premortem.premortem_agent import PreMortemAgent
@@ -153,7 +154,7 @@ def _fetch_materials(materials: List[Material], workdir: Path):
 
 
 def run_engine(req: PredictionRequest) -> Dict[str, Any]:
-    """Adapter boundary: swap this body for the ADK agent, keep the report shape."""
+    """Fetch the materials, gate the screenplay, run the orchestrated pre-mortem."""
     with tempfile.TemporaryDirectory() as tmp:
         script_text, keyframes = _fetch_materials(req.materials, Path(tmp))
         title = req.classifications.get("title", "Untitled Submission")
@@ -162,102 +163,72 @@ def run_engine(req: PredictionRequest) -> Dict[str, Any]:
             reasons = validate_screenplay(metrics)
             if reasons:
                 raise HTTPException(400, {"error": "not_a_screenplay", "reasons": reasons})
-            # ponytail: the engine re-parses internally; it takes text, not pre-parsed metrics
-            return _agent.run_script_premortem(
-                script_path_or_text=script_text, keyframes_path_or_dir=keyframes, title=title
-            )
-        return _agent.run_premise_premortem(
-            logline=req.story,
-            keyframes_path_or_dir=keyframes,
-            title=title,
+        # ponytail: the orchestrator re-parses the text; it takes text, not metrics
+        return _agent.run_premortem(
+            story=req.story,
+            script_text=script_text,
+            keyframes_dir=keyframes,
             genre=req.classifications.get("genre"),
+            title=title,
+            medium=req.medium,
+            target_geography=req.targetGeography,
         )
 
 
 def _to_response(report: Dict[str, Any], req: PredictionRequest) -> PredictionResponse:
-    if report["mode"] == "script_premortem":
-        rating = report["projected_baseline_rating"]
-        baseline = report["historical_show_mean"]
-        cm = report["craft_metrics"]
-        story_finding = (
-            f"Runtime {cm['estimated_runtime_min']} min across {cm['total_scenes']} scenes, "
-            f"{cm['words_per_minute']} WPM, climax acceleration {cm['climax_acceleration']}x."
-        )
-        visual_finding = report["vision_summary"]
-        market = report["audience_trope_intelligence"]
-        flaws = report["detected_craft_flaws"]
-        audience_finding = "; ".join(f["finding"] for f in flaws) or "No craft flaws above threshold."
-        notes = report["recommendations"]
-    else:
-        rating = report["projected_rating_potential"]["median_target"]
-        baseline = report["empirical_genre_baseline"]
-        band = report["projected_rating_potential"]
-        story_finding = (
-            f"{report['genre']} premise, tone '{report['detected_tone']}'. "
-            f"Rating band {band['floor']}-{band['ceiling']}."
-        )
-        coh = report["style_premise_cohesion"]
-        visual_finding = f"{coh['rating']}: {coh['evaluation']}"
-        market = report["audience_fatigue_radar"]
-        audience_finding = report["greenlight_verdict"]
-        notes = report["make_or_break_dependencies"]
+    """Map the orchestrator's report onto the contract. No arithmetic beyond copying."""
+    prediction = report["prediction"]
+    cv_mae = prediction.get("cv_mae")
+    score = M.score_from_rating(prediction["expected_rating"])
+    claims = report.get("claims") or []
+    degraded = bool(report.get("degraded"))
 
-    score = max(0, min(100, round(rating * 10)))
-    outcome = "hit" if score >= 70 else "miss" if score <= 50 else "inconclusive"
-
-    claims = market.get("audience_consensus_claims", [])
-    queries = market.get("queries_executed", [])
-    query_count = len(queries) if isinstance(queries, list) else int(queries or 0)
-    sources = [c["source_url"] for c in claims if c.get("source_url")]
-    # confidence: distance from the inconclusive band, tempered by evidence volume
-    confidence = round(min(0.95, 0.4 + abs(score - 60) / 100 + 0.05 * len(claims)), 2)
-
+    findings = M.slot_findings(report)
     agents = [
-        AgentResult(agentId="story", status="complete", finding=story_finding, score=score),
-        AgentResult(agentId="audience", status="complete", finding=audience_finding),
         AgentResult(
-            agentId="market",
-            status="complete" if claims else "partial",
-            finding=f"{query_count} Parallel Search queries; {len(claims)} audience claims extracted.",
-            sources=sources,
-        ),
-        AgentResult(agentId="visual", status="complete", finding=visual_finding),
+            agentId=slot,
+            status=M.slot_status(slot, report),
+            finding=findings[slot],
+            score=score if slot == "story" else None,
+            sources=sorted({c["source_url"] for c in M.claims_for(slot, report)})
+            if slot in ("audience", "market") else [],
+        )
+        for slot in ("story", "audience", "market", "visual")
     ]
 
     evidence = [
+        Evidence(title=title, statement=statement, sourceType="model_signal")
+        for title, statement in M.model_signals(report)
+    ]
+    evidence += [
         Evidence(
-            title="Submission",
-            statement=f"{req.medium} for {req.targetGeography}: {req.story[:200]}",
-            sourceType="submission",
-        ),
-        Evidence(
-            title="Model signal",
-            statement=f"Projected rating {rating}/10 against baseline {baseline}/10.",
-            sourceType="model_signal",
-        ),
-    ] + [
-        Evidence(
-            title=c.get("category", "Audience claim"),
-            statement=c.get("claim", ""),
+            title=c.get("category", "Research claim"),
+            statement=f"{c['claim']} Quoted: “{c['evidence']}”",
             sourceType="parallel_search",
-            sourceUrl=c.get("source_url"),
+            sourceUrl=c["source_url"],
         )
         for c in claims
     ]
-    for n in notes[:3]:
-        evidence.append(Evidence(title="Recommendation", statement=n, sourceType="model_signal"))
+    evidence.append(Evidence(
+        title="Submission",
+        statement=f"{req.medium} for {req.targetGeography}: {req.story[:200]}",
+        sourceType="submission",
+    ))
 
     model = _quant.champion_model
     return PredictionResponse(
         predictionId=uuid.uuid4(),
-        outcome=outcome,
+        outcome=M.outcome_for(score, cv_mae),
         score=score,
-        confidence=confidence,
-        summary=f"{outcome.upper()} at {score}/100 - projected {rating}/10 vs baseline {baseline}/10.",
+        confidence=M.confidence_for(
+            len(claims), cv_mae, report.get("has_screenplay", False), degraded
+        ),
+        summary=M.summary_for(report),
         agents=agents,
         evidence=evidence,
         model={"modelId": getattr(model, "model_type", None), "version": "champion"},
     )
+
 
 
 @app.post("/v1/predictions", response_model=PredictionResponse)
