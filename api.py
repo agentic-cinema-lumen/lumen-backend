@@ -17,12 +17,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, AsyncGenerator, Callable, Dict, List, Literal, Optional
 
+import os
 import requests
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, Security
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field, field_validator
 
 from src.agents import response_mapping as M
@@ -36,6 +38,22 @@ from src.quant.quant_agent import QuantAgent
 load_env_file()  # PARALLEL_API_KEY / GEMINI_API_KEY, else the engine runs on mock search
 
 MAX_MATERIAL_BYTES = 20 * 1024 * 1024
+
+_api_key_header = APIKeyHeader(name="X-Lumen-Key", auto_error=False)
+
+
+def verify_api_key(api_key: Optional[str] = Security(_api_key_header)) -> None:
+    """Verify shared secret between frontend and backend.
+
+    If LUMEN_API_KEY is not set in the environment (e.g. local dev / tests),
+    access is granted automatically. If set, requests must provide matching X-Lumen-Key.
+    """
+    expected = os.environ.get("LUMEN_API_KEY")
+    if not expected:
+        return
+    if not api_key or api_key != expected:
+        raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing X-Lumen-Key.")
+
 
 # ---------------------------------------------------------------- schemas
 
@@ -250,7 +268,7 @@ async def _to_thread(func, /, *args, **kwargs):
     return await loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
 
 
-@app.post("/v1/predictions", response_model=PredictionResponse)
+@app.post("/v1/predictions", response_model=PredictionResponse, dependencies=[Depends(verify_api_key)])
 async def create_prediction(req: PredictionRequest) -> PredictionResponse:
     # ponytail: engine is sync, so one thread per request; add a queue if it saturates
     report = await _to_thread(run_engine, req)
@@ -291,7 +309,7 @@ async def _stream_generator(req: PredictionRequest, prediction_id: uuid.UUID) ->
         pass
 
 
-@app.post("/v1/predictions/stream")
+@app.post("/v1/predictions/stream", dependencies=[Depends(verify_api_key)])
 async def create_prediction_stream(req: PredictionRequest) -> StreamingResponse:
     """Execute pre-mortem and stream real-time events over SSE, ending with the complete report."""
     prediction_id = uuid.uuid4()
@@ -306,7 +324,7 @@ async def create_prediction_stream(req: PredictionRequest) -> StreamingResponse:
     )
 
 
-@app.get("/v1/predictions/{prediction_id}/events")
+@app.get("/v1/predictions/{prediction_id}/events", dependencies=[Depends(verify_api_key)])
 async def stream_prediction_events(prediction_id: uuid.UUID) -> StreamingResponse:
     """Stream live events or replay event history for a prediction ID."""
     pid = str(prediction_id)

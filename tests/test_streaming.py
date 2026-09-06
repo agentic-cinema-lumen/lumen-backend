@@ -128,6 +128,35 @@ class TestStreamingAPI(unittest.TestCase):
         self.assertIn("agents", data)
         self.assertEqual(len(data["agents"]), 4)
 
+    def test_auth_enforcement_when_lumen_api_key_is_set(self):
+        import os
+        payload = {
+            "story": "An insomniac detective investigates a mysterious underground society.",
+            "medium": "Feature film",
+            "targetGeography": "Nordics",
+            "classifications": {"genre": "Mystery", "title": "Dark City"},
+            "materials": [],
+        }
+
+        # Set API key in environment
+        os.environ["LUMEN_API_KEY"] = "super-secret-lumen-key"
+        try:
+            # 1. Missing header -> 401
+            res1 = self.client.post("/v1/predictions", json=payload)
+            self.assertEqual(res1.status_code, 401)
+            self.assertIn("Unauthorized", res1.json().get("detail", ""))
+
+            # 2. Wrong header -> 401
+            res2 = self.client.post("/v1/predictions", json=payload, headers={"X-Lumen-Key": "wrong-key"})
+            self.assertEqual(res2.status_code, 401)
+
+            # 3. Correct header -> 200
+            res3 = self.client.post("/v1/predictions", json=payload, headers={"X-Lumen-Key": "super-secret-lumen-key"})
+            self.assertEqual(res3.status_code, 200)
+            self.assertIn("predictionId", res3.json())
+        finally:
+            del os.environ["LUMEN_API_KEY"]
+
 
 if __name__ == "__main__":
     unittest.main()
