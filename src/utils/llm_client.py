@@ -25,6 +25,9 @@ class LLMClient:
         self.force_mock = force_mock
         self.gemini_key = os.environ.get("GEMINI_API_KEY")
         self.openai_key = os.environ.get("OPENAI_API_KEY")
+        # Why a caller must be able to see this: silent mocking produced a
+        # fabricated demo. A mocked run has to be able to announce itself.
+        self.mock_reason: Optional[str] = None
 
         if self.gemini_key and not self.force_mock:
             self.provider = "gemini"
@@ -35,6 +38,15 @@ class LLMClient:
         else:
             self.provider = "mock"
             self.model = "agent-mock-v1"
+            self.mock_reason = (
+                "force_mock=True" if self.force_mock
+                else "no GEMINI_API_KEY or OPENAI_API_KEY in the environment"
+            )
+
+    @property
+    def is_mock(self) -> bool:
+        """True when generate() returns canned text rather than model output."""
+        return self.provider == "mock" or self.mock_reason is not None
 
     def generate(self, system_prompt: str, user_prompt: str, temperature: float = 0.4) -> str:
         """Generate text completion from selected provider or smart mock fallback."""
@@ -42,6 +54,7 @@ class LLMClient:
             try:
                 return self._call_gemini(system_prompt, user_prompt, temperature)
             except Exception as e:
+                self.mock_reason = f"Gemini call failed: {e}"
                 print(f"⚠️ [LLMClient] Gemini call failed ({e}), falling back to smart mock mode.")
                 return self._mock_response(user_prompt)
 
@@ -49,6 +62,7 @@ class LLMClient:
             try:
                 return self._call_openai(system_prompt, user_prompt, temperature)
             except Exception as e:
+                self.mock_reason = f"OpenAI call failed: {e}"
                 print(f"⚠️ [LLMClient] OpenAI call failed ({e}), falling back to smart mock mode.")
                 return self._mock_response(user_prompt)
 

@@ -1,157 +1,133 @@
 #!/usr/bin/env python3
 """
-🎬 CLI RUNNER: AGENTIC CINEMA PRE-MORTEM & GREENLIGHT COMPASS 🎬
+🎬 CLI RUNNER: ORCHESTRATED CINEMA PRE-MORTEM 🎬
 
-Executes the autonomous Pre-Mortem evaluation on:
-- Mode 1: Full Script / Draft + Keyframes
-- Mode 2: Logline Idea + Keyframe Moodboard
+Script mode (--script) or concept mode (--logline). The numbers come from the
+deterministic orchestrator; the prose and the research claims come from the two
+Gemini subagents. A degraded run says so instead of pretending.
 """
 
-import sys
-import os
 import argparse
 import json
+import sys
 from pathlib import Path
 
-# Add project root to sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from src.agents.orchestrator import Orchestrator
 from src.premortem.premortem_agent import PreMortemAgent
 from src.search.parallel_search_client import ParallelSearchClient
-from src.utils.llm_client import LLMClient
-
-
-def print_banner():
-    print("=" * 70)
-    print("🎬  AGENTIC CINEMA DETECTIVE: PRE-MORTEM & GREENLIGHT ENGINE  🎬")
-    print("=" * 70)
+from src.agents.research_agent import ResearchAgent
 
 
 def run_cli():
-    parser = argparse.ArgumentParser(description="Autonomous Cinema Pre-Mortem & Craft Simulator")
+    parser = argparse.ArgumentParser(description="Orchestrated cinema pre-mortem")
     parser.add_argument("--script", type=str, help="Path to screenplay (.txt, .fountain)")
     parser.add_argument("--logline", type=str, help="Pitch logline (2-4 sentences)")
-    parser.add_argument("--pitch-file", type=str, help="Path to pitch JSON file containing logline and metadata")
-    parser.add_argument("--keyframes", type=str, default="data/movies/alien/keyframes", help="Directory or path with keyframe images")
-    parser.add_argument("--title", type=str, default="Untitled Project", help="Title of script or concept")
-    parser.add_argument("--show", type=str, default="Prestige Series", help="Parent show name (for scripts)")
-    parser.add_argument("--export", type=str, help="Optional output JSON file path for report")
-    parser.add_argument("--mock", action="store_true", help="Force offline mock mode for APIs")
-
+    parser.add_argument("--keyframes", type=str, help="Directory of keyframe images")
+    parser.add_argument("--title", type=str, default="Untitled Project")
+    parser.add_argument("--genre", type=str, help="Genre; the agent infers one if omitted")
+    parser.add_argument("--export", type=str, help="Write the full report JSON here")
+    parser.add_argument("--mock", action="store_true", help="Force offline mock search")
     args = parser.parse_args()
-    print_banner()
 
-    llm = LLMClient(force_mock=args.mock)
-    search_client = ParallelSearchClient(force_mock=args.mock)
-    agent = PreMortemAgent(llm_client=llm)
-    agent.trope_sleuth.client = search_client
-
-    report = None
-
-    # Determine execution mode
-    if args.script:
-        print(f"\n📑 [Mode 1: Script Pre-Mortem] Ingesting script: {args.script}")
-        print(f"📸 Keyframes: {args.keyframes}")
-        report = agent.run_script_premortem(
-            script_path_or_text=args.script,
-            keyframes_path_or_dir=args.keyframes,
-            title=args.title,
-            show_name=args.show
-        )
-
-        print("\n" + "-" * 70)
-        print(f"📊 PROJECTED RATING: {report['projected_baseline_rating']} / 10.0")
-        print(f"📈 Series Historical Mean: {report['historical_show_mean']} | Residual Delta: {report['projected_residual_delta']:+0.2f}")
-        print("-" * 70)
-
-        print("\n⚙️  CRAFT METRICS:")
-        for k, v in report["craft_metrics"].items():
-            print(f"  • {k:24s}: {v}")
-
-        print("\n👁️  VISUAL CRAFT ASSESSMENT:")
-        print(f"  {report['vision_summary']}")
-
-        print("\n⚠️  DETECTED CRAFT FLAWS & RESIDUAL DRAG:")
-        if report["detected_craft_flaws"]:
-            for f in report["detected_craft_flaws"]:
-                print(f"  ❌ [{f['category']} - {f['severity']}] {f['finding']}")
-                print(f"     Impact: {f['predicted_penalty']}")
-        else:
-            print("  ✅ No severe craft drags identified in baseline script dynamics.")
-
-        print("\n🌐 PARALLEL SEARCH AUDIENCE SLEUTH (Reddit & Critic Archives):")
-        for c in report["audience_trope_intelligence"]["audience_consensus_claims"]:
-            valence_icon = "🔻" if c["valence"] == "negative" else "🔹"
-            print(f"  {valence_icon} [{c['category']}] {c['claim']}")
-            if c.get("evidence"):
-                print(f"     Snippet: \"{c['evidence'][:110]}...\"")
-
-        print("\n💡 ACTIONABLE PRODUCTION RECOMMENDATIONS:")
-        for r in report["recommendations"]:
-            print(f"  • {r}")
-
-    elif args.logline or args.pitch_file:
-        logline = args.logline
-        title = args.title
-        keyframes = args.keyframes
-
-        if args.pitch_file:
-            with open(args.pitch_file, "r", encoding="utf-8") as f:
-                pdata = json.load(f)
-                logline = pdata.get("logline", logline)
-                title = pdata.get("title", title)
-                if "moodboard_dir" in pdata:
-                    keyframes = pdata["moodboard_dir"]
-
-        print(f"\n💡 [Mode 2: Greenlight Compass] Pitch: \"{title}\"")
-        print(f"📝 Logline: {logline}")
-        print(f"📸 Moodboard: {keyframes}")
-
-        report = agent.run_premise_premortem(
-            logline=logline,
-            keyframes_path_or_dir=keyframes,
-            title=title
-        )
-
-        print("\n" + "-" * 70)
-        target = report['projected_rating_potential']
-        print(f"🎯 PROJECTED POTENTIAL: {target['median_target']} / 10.0 (Floor: {target['floor']} | Ceiling: {target['ceiling']})")
-        print(f"🎭 Genre: {report['genre']} | Tone: {report['detected_tone']}")
-        print(f"🎨 Aesthetic Cohesion: {report['style_premise_cohesion']['rating']} ({report['style_premise_cohesion']['evaluation']})")
-        print("-" * 70)
-
-        comps = report.get("comparable_movie_precedents", [])
-        if comps:
-            print("\n🎞️  HISTORICAL MOVIE PRECEDENTS (IMDb Database Matches):")
-            for c in comps:
-                pol_str = f" | Pol: {c['polarization_index']:.1%}" if c.get("polarization_index") else ""
-                print(f"  • {c['title']} ({c['year']}) — IMDb: {c['imdb_rating']}/10 ({c['total_votes']:,} votes{pol_str})")
-                print(f"    Genre: {c['genre']} | Dir: {c['director']}")
-                print(f"    Premise: \"{c['logline'][:100]}...\"")
-
-        print("\n📌 MAKE-OR-BREAK CRAFT DEPENDENCIES:")
-        for d in report["make_or_break_dependencies"]:
-            print(f"  • {d}")
-
-        print("\n🌐 PARALLEL SEARCH AUDIENCE FATIGUE RADAR:")
-        for c in report["audience_fatigue_radar"]["audience_consensus_claims"]:
-            valence_icon = "🔻" if c["valence"] == "negative" else "🔹"
-            print(f"  {valence_icon} [{c['category']}] {c['claim']}")
-
-        print("\n⚖️  FINAL GREENLIGHT VERDICT:")
-        print(f"  {report['greenlight_verdict']}")
-
-    else:
+    if not args.script and not args.logline:
         parser.print_help()
         sys.exit(1)
 
-    # Export if requested
-    if args.export and report:
-        out_p = Path(args.export).resolve()
-        out_p.parent.mkdir(parents=True, exist_ok=True)
-        with open(out_p, "w", encoding="utf-8") as f:
-            json.dump(report, f, indent=2)
-        print(f"\n💾 Saved Pre-Mortem report to: {out_p}")
+    script_text = None
+    if args.script:
+        script_text = Path(args.script).read_text(encoding="utf-8", errors="replace")
+
+    orchestrator = Orchestrator(
+        research_agent=ResearchAgent(
+            search_client=ParallelSearchClient(force_mock=args.mock)
+        )
+    )
+    story = args.logline or f"Screenplay submission: {args.title}."
+
+    print("=" * 70)
+    print("🎬  ORCHESTRATED CINEMA PRE-MORTEM  🎬")
+    print("=" * 70)
+    print(f"Mode: {'script' if script_text else 'concept'} | Title: {args.title}")
+
+    report = PreMortemAgent(orchestrator=orchestrator).run_premortem(
+        story=story,
+        script_text=script_text,
+        keyframes_dir=args.keyframes,
+        genre=args.genre,
+        title=args.title,
+    )
+
+    if report["degraded"]:
+        print("\n⚠️  DEGRADED RUN:")
+        for reason in report["degradation_reasons"]:
+            print(f"  • {reason}")
+
+    p = report["prediction"]
+    print("\n" + "-" * 70)
+    print(f"📊 PROJECTED {p['expected_rating']}/10 vs {p['genre_baseline_rating']}/10 "
+          f"genre prior (residual {p['craft_residual_delta']:+.2f}, "
+          f"cv_mae ±{p['cv_mae']}, cv_r2 {p['cv_r2']})")
+    print(f"🎭 Genre: {report['genre']}"
+          + ("" if report["genre"] == report["inferred_genre"] else
+             f" (agent inferred: {report['inferred_genre']})"))
+    print("-" * 70)
+
+    if report["script_metrics"]:
+        print("\n⚙️  CRAFT METRICS (measured):")
+        for k, v in report["script_metrics"].items():
+            print(f"  • {k:24s}: {v}")
+
+    print("\n👁️  VISION MEASUREMENTS:")
+    v = report["vision"]
+    print(f"  • frames: {v['image_count']} | mean luminance: {v['mean_luminance']} "
+          f"| dark frame ratio: {v['dark_frame_ratio']}")
+
+    print("\n⚠️  DETERMINISTIC RISK FLAGS:")
+    for f in report["risk_flags"] or []:
+        print(f"  ❌ [{f['category']} — {f['severity']}] {f['issue']}: {f['detail']}")
+    if not report["risk_flags"]:
+        print("  ✅ none above threshold")
+
+    print("\n🧮 COUNTERFACTUAL SWEEP (single-variable, deterministic):")
+    for row in report["sweep"]:
+        tag = " (inside the noise floor)" if row["inside_noise_floor"] else ""
+        print(f"  • {row['feature']:22s} {row['value']:>8} {row['delta']:+.3f}{tag}")
+
+    print(f"\n🌐 RESEARCH CLAIMS ({len(report['claims'])} survived grounding, "
+          f"{len(report['dropped_claims'])} dropped):")
+    for c in report["claims"]:
+        print(f"  [{c['category']} / {c['valence']}] {c['claim']}")
+        print(f"     evidence: \"{c['evidence'][:140]}\"")
+        print(f"     source:   {c['source_url']}")
+
+    synthesis = report["synthesis"]
+    if synthesis:
+        print("\n📝 SUMMARY:")
+        print(f"  {synthesis['summary']}")
+        print("\n🔎 PER-SLOT FINDINGS:")
+        for f in synthesis["findings"]:
+            print(f"  [{f['slot']}] {f['finding']}")
+        print("\n💡 RECOMMENDATIONS:")
+        sweep_flags = {r["feature"]: r["inside_noise_floor"] for r in report["sweep"]}
+        for r in synthesis["recommendations"]:
+            tag = ""
+            if r["feature"] in sweep_flags:
+                tag = (" [sweep row inside the noise floor]" if sweep_flags[r["feature"]]
+                       else " [sweep row clears the noise floor]")
+            print(f"  • {r['text']}{tag}")
+
+    if report["tool_events"]:
+        print(f"\n🔧 TOOL-CALL EVENTS: {len(report['tool_events'])}")
+        for e in report["tool_events"]:
+            print(f"  • {e['phase']}: {e['tool']} {e.get('args', {})}")
+
+    if args.export:
+        out = Path(args.export).resolve()
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(report, indent=2, default=str), encoding="utf-8")
+        print(f"\n💾 Saved report to: {out}")
 
 
 if __name__ == "__main__":

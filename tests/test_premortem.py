@@ -1,55 +1,102 @@
-"""Integration tests for PreMortemAgent (Script mode and Premise mode)."""
+"""The orchestrated pre-mortem engine, in script mode and concept mode.
 
+Both LLM subagents are recorded fixtures; the deterministic half — parser,
+ConceptInspector, oracle, sweep — runs for real. LIVE_AGENTS=1 adds a live run.
+"""
+
+import os
 import unittest
-from pathlib import Path
+
+import pytest
 
 from src.premortem.premortem_agent import PreMortemAgent
-from src.search.parallel_search_client import ParallelSearchClient
-from src.utils.llm_client import LLMClient
+from tests.stub_agents import StubResearchAgent, StubSynthesisAgent, stub_orchestrator
+
+SCRIPT = "data/movies/fight_club/script.txt"
+KEYFRAMES = "data/movies/fight_club/keyframes"
+LOGLINE = (
+    "An insomniac office worker and a soap salesman start an underground fight club "
+    "that grows into something neither of them can stop."
+)
 
 
-class TestPreMortemAgent(unittest.TestCase):
+def _script_text():
+    with open(SCRIPT, encoding="utf-8", errors="replace") as f:
+        return f.read()
+
+
+class TestOrchestratedPreMortem(unittest.TestCase):
 
     def setUp(self):
-        llm = LLMClient(force_mock=True)
-        search_client = ParallelSearchClient(force_mock=True)
-        self.agent = PreMortemAgent(llm_client=llm)
-        self.agent.trope_sleuth.client = search_client
-
-    def test_run_script_premortem(self):
-        script_file = "data/movies/alien/script.txt"
-        keyframes_dir = "data/movies/alien/keyframes"
-
-        report = self.agent.run_script_premortem(
-            script_path_or_text=script_file,
-            keyframes_path_or_dir=keyframes_dir,
-            title="Alien",
-            show_name="Alien Franchise",
-            show_historical_mean=8.4
+        self.research = StubResearchAgent()
+        self.synthesis = StubSynthesisAgent()
+        self.agent = PreMortemAgent(
+            orchestrator=stub_orchestrator(self.research, self.synthesis)
         )
 
-        self.assertEqual(report["mode"], "script_premortem")
-        self.assertIn("projected_baseline_rating", report)
-        self.assertGreater(report["projected_baseline_rating"], 5.0)
-        self.assertIn("craft_metrics", report)
-        self.assertIn("audience_trope_intelligence", report)
-        self.assertIn("recommendations", report)
-
-    def test_run_premise_premortem(self):
-        logline = "In a subterranean lunar courtroom, an accused rebel officer faces execution while the jury oxygen levels deplete."
-        keyframes_dir = "data/movies/alien/keyframes"
-
-        report = self.agent.run_premise_premortem(
-            logline=logline,
-            keyframes_path_or_dir=keyframes_dir,
-            title="Lunar Justice Pitch"
+    def test_script_mode(self):
+        report = self.agent.run_premortem(
+            story=LOGLINE, script_text=_script_text(), keyframes_dir=KEYFRAMES,
+            title="Fight Club", genre="Drama",
         )
+        self.assertTrue(report["has_screenplay"])
+        self.assertTrue(report["has_concept_frames"])
+        self.assertGreater(report["prediction"]["expected_rating"], 5.0)
+        self.assertTrue(report["sweep"])
+        self.assertTrue(report["claims"])
+        self.assertFalse(report["degraded"])
 
-        self.assertEqual(report["mode"], "premise_greenlight_compass")
-        self.assertIn("projected_rating_potential", report)
-        self.assertIn("style_premise_cohesion", report)
-        self.assertIn("make_or_break_dependencies", report)
-        self.assertIn("greenlight_verdict", report)
+    def test_concept_mode_has_the_same_report_shape(self):
+        script = self.agent.run_premortem(
+            story=LOGLINE, script_text=_script_text(), keyframes_dir=KEYFRAMES,
+            title="Fight Club", genre="Drama",
+        )
+        concept = self.agent.run_premortem(story=LOGLINE, title="Fight Club")
+        self.assertEqual(set(script), set(concept))
+        self.assertFalse(concept["has_screenplay"])
+        self.assertFalse(concept["has_concept_frames"])
+        self.assertIsNone(concept["script_metrics"])
+
+    def test_concept_mode_genre_comes_from_the_agent(self):
+        """The parse_premise_logline keyword heuristic is gone."""
+        report = self.agent.run_premortem(story=LOGLINE, title="Fight Club")
+        self.assertEqual(report["genre"], self.research.inferred_genre)
+        self.assertIsNone(self.research.seen["genre"])
+
+    def test_the_research_agent_receives_the_deterministic_risk_flags(self):
+        self.agent.run_premortem(
+            story=LOGLINE, script_text=_script_text(), keyframes_dir=KEYFRAMES,
+            title="Fight Club", genre="Drama",
+        )
+        flags = self.research.seen["risk_flags"]
+        self.assertIsInstance(flags, list)
+        # Fight Club's keyframes are measurably dark; the flag must reach research
+        self.assertTrue(any(f["category"] == "Cinematography" for f in flags), flags)
+
+    def test_the_synthesis_agent_never_sees_a_tool(self):
+        from src.agents.synthesis_agent import SynthesisAgent
+        built = SynthesisAgent().build_agent()
+        self.assertFalse(built.tools)
+        self.assertIsNotNone(built.output_schema)
+
+    def test_a_degraded_subagent_degrades_the_report(self):
+        agent = PreMortemAgent(orchestrator=stub_orchestrator(
+            StubResearchAgent(degraded=True), StubSynthesisAgent()
+        ))
+        report = agent.run_premortem(story=LOGLINE, title="Fight Club")
+        self.assertTrue(report["degraded"])
+        self.assertTrue(report["degradation_reasons"])
+
+
+@pytest.mark.skipif(os.environ.get("LIVE_AGENTS") != "1", reason="set LIVE_AGENTS=1")
+def test_live_end_to_end():
+    report = PreMortemAgent().run_premortem(
+        story=LOGLINE, script_text=_script_text(), keyframes_dir=KEYFRAMES,
+        title="Fight Club",
+    )
+    assert report["prediction"]["expected_rating"] > 0
+    for claim in report["claims"]:
+        assert claim["source_url"] in report["retrieved_urls"]
 
 
 if __name__ == "__main__":
