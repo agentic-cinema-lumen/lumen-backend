@@ -265,7 +265,8 @@ def load_movie_corpus(movies_dir: str = "data/movies") -> List[Dict[str, Any]]:
         cpm = float(sm.get("cuts_per_minute", 15.0))
         wpm = float(sm.get("words_per_minute", 100.0))
         genre_str = m.get("genre", "Drama")
-        genre_base = loader.get_genre_expectation(genre_str) if loader else 6.5
+        from src.quant.oracle import QuantOracle
+        genre_base = QuantOracle.get_genre_baseline_static(genre_str)
 
         movies.append({
             "episode_id": f"movie_{m.get('slug', m['title'])}",

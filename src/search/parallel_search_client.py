@@ -49,8 +49,15 @@ class ParallelSearchClient:
             try:
                 with open(cache_file, "r", encoding="utf-8") as f:
                     cached_data = json.load(f)
-                    cached_data["_source"] = "disk_cache"
-                    return cached_data
+                    # If cached data was a real live response, return it
+                    if cached_data.get("_source") == "parallel_api":
+                        cached_data["_source"] = "disk_cache"
+                        cached_data["is_degraded"] = False
+                        return cached_data
+                    elif self.force_mock or not self.api_key:
+                        cached_data["_source"] = "disk_cache"
+                        cached_data["is_degraded"] = True
+                        return cached_data
             except Exception:
                 pass
 
@@ -58,16 +65,18 @@ class ParallelSearchClient:
             try:
                 data = self._call_live_parallel_api(query, num_results)
                 data["_source"] = "parallel_api"
-                # Cache response
+                data["is_degraded"] = False
+                # Cache live response
                 with open(cache_file, "w", encoding="utf-8") as f:
                     json.dump(data, f, indent=2)
                 return data
             except Exception as e:
                 print(f"⚠️ [ParallelSearchClient] Live search failed ({e}); switching to smart mock response.")
 
-        # Fallback to realistic mock search engine
+        # Fallback to realistic mock search engine (marked as degraded)
         mock_data = self._generate_smart_mock_results(query, num_results)
         mock_data["_source"] = "smart_mock"
+        mock_data["is_degraded"] = True
         try:
             with open(cache_file, "w", encoding="utf-8") as f:
                 json.dump(mock_data, f, indent=2)

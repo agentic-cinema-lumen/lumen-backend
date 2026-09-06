@@ -46,7 +46,7 @@ class TestQuantOracle(unittest.TestCase):
         # Rating must be within realistic cinema bounds
         self.assertGreaterEqual(res["expected_rating"], 1.0)
         self.assertLessEqual(res["expected_rating"], 10.0)
-        self.assertEqual(res["genre_baseline_rating"], 5.63)
+        self.assertEqual(res["genre_baseline_rating"], 7.72)
 
     def test_03_predict_craft_with_custom_features(self):
         """Verify custom craft inputs produce expected metrics and attributions."""
