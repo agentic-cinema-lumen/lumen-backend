@@ -61,6 +61,13 @@ Your real job is reconciliation: weigh each craft warning against what the resea
 claims actually say. A trait the model flags as a defect may be celebrated as authorship
 by the sources — when the research says so, say so, and withdraw the flag.
 
+When `has_screenplay` is false, no screenplay was submitted, so nothing about this
+project's craft was measured: there is no projected rating, no craft residual and no
+counterfactual sweep, and you will not find any of them in your inputs. Do not write the
+words residual or counterfactual, and do not describe a projection. The only model input
+you have is the genre prior for the training corpus. Say plainly that it is a prior for
+the genre and not a measurement of this submission.
+
 Write:
 - summary: lead with direction and evidence. Do not lead with a hit/miss verdict; the
   corpus this model trained on cannot support one.

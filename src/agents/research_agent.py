@@ -217,8 +217,19 @@ class ResearchAgent:
 
         if getattr(self.client, "force_mock", False) or (mocked and all(mocked)):
             reasons.append("search results are mock output, not live retrieval")
+        proposed = sum(len(o.claims) for o in outputs)
         if dropped:
-            reasons.append(f"{len(dropped)} ungrounded claim(s) dropped")
+            reasons.append(
+                f"{len(dropped)} of {proposed} claim(s) dropped by the grounding filter"
+                + ("; none survived" if not claims else "")
+            )
+        # An agent that searched and then answered with an empty claims list is
+        # obeying its instruction, but the producer still gets nothing sourced.
+        # Silence about that is what made a zero-claim run look like a clean one.
+        if not outputs and not reasons:
+            reasons.append("research agent produced no structured output")
+        elif outputs and proposed == 0:
+            reasons.append("the research agent returned no claims at all")
 
         inferred = genre or next((o.inferred_genre for o in outputs if o.inferred_genre), None)
         return {
@@ -228,8 +239,8 @@ class ResearchAgent:
             "retrieved_urls": list(retrieved),
             "inferred_genre": inferred,
             "tool_events": self._tool_events,
-            # a dropped claim is the filter working, not a degraded pipeline
-            "degraded": bool(reasons) and not (len(reasons) == 1 and dropped),
+            # a partial drop is the filter working; losing every claim is not
+            "degraded": bool(reasons) and not (len(reasons) == 1 and dropped and claims),
             "degradation_reasons": reasons,
         }
 

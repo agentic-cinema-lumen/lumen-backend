@@ -32,6 +32,10 @@ from src.vision.concept_inspector import ConceptInspector
 
 MODE = "orchestrated_premortem"
 
+# The only craft features a concept-mode submission actually measures. Everything
+# else in the vector is a `DEFAULT_FEATURE_VALUES` corpus median.
+VISION_FEATURES = ("mean_luminance", "luminance_std", "dark_frame_ratio")
+
 
 @dataclass
 class Submission:
@@ -101,14 +105,19 @@ class Orchestrator:
     def run(self, sub: Submission) -> Dict[str, Any]:
         vision = self.concept_inspector.inspect_images(sub.keyframes_dir)
         has_frames = vision.get("image_count", 0) > 0
+        has_screenplay = bool(sub.script_text)
         features = self._features(sub, vision)
 
         # Risk flags come off the feature vector and need no genre, so research
-        # can run before the genre is resolved.
+        # can run before the genre is resolved. Without a screenplay every
+        # non-vision feature is a corpus median, so flagging the full vector
+        # would flag the median film rather than the submission.
         oracle = self.oracle or get_oracle()
-        risk_flags = oracle._detect_vulnerabilities(
-            {k: v for k, v in features.items() if isinstance(v, (int, float))}
-        )
+        measured = {k: v for k, v in features.items() if isinstance(v, (int, float))}
+        if not has_screenplay:
+            measured = {k: v for k, v in measured.items()
+                        if has_frames and k in VISION_FEATURES}
+        risk_flags = oracle._detect_vulnerabilities(measured)
 
         research = self.research_agent.run(
             premise=sub.story,
@@ -120,14 +129,30 @@ class Orchestrator:
 
         submission = SubmissionOracle({**features, "genre": genre}, oracle=oracle)
         prediction = submission.baseline()
-        sweep = run_sweep(submission)
+        # A sweep of a median feature vector measures the median film, not this
+        # submission, so concept mode has no counterfactuals to report.
+        sweep = run_sweep(submission) if has_screenplay else []
+
+        prediction_view = {
+            "expected_rating": prediction["expected_rating"],
+            "genre_baseline_rating": prediction["genre_baseline_rating"],
+            "craft_residual_delta": prediction["craft_residual_delta"],
+            "cv_mae": prediction["model_metadata"]["cv_mae"],
+            "cv_r2": prediction["model_metadata"]["cv_r2"],
+        }
+        # The residual and the projection are craft measurements. Without a
+        # screenplay they describe the corpus median, so the synthesis agent is
+        # given the genre prior alone and cannot narrate them.
+        synthesis_prediction = prediction_view if has_screenplay else {
+            k: prediction_view[k] for k in ("genre_baseline_rating", "cv_mae", "cv_r2")
+        }
 
         claims = research["claims"]
         synthesis_inputs = {
             "title": sub.title,
             "genre": genre,
             "logline": sub.story,
-            "has_screenplay": bool(sub.script_text),
+            "has_screenplay": has_screenplay,
             "has_concept_frames": has_frames,
             "script_metrics": self._script_metrics and {
                 k: self._script_metrics[k] for k in (
@@ -140,13 +165,7 @@ class Orchestrator:
                 k: vision[k] for k in ("image_count", "mean_luminance", "luminance_std",
                                        "dark_frame_ratio") if k in vision
             },
-            "prediction": {
-                "expected_rating": prediction["expected_rating"],
-                "genre_baseline_rating": prediction["genre_baseline_rating"],
-                "craft_residual_delta": prediction["craft_residual_delta"],
-                "cv_mae": prediction["model_metadata"]["cv_mae"],
-                "cv_r2": prediction["model_metadata"]["cv_r2"],
-            },
+            "prediction": synthesis_prediction,
             "risk_flags": risk_flags,
             "counterfactual_sweep": sweep,
             "research_claims": claims,
@@ -160,12 +179,12 @@ class Orchestrator:
             "genre": genre,
             "inferred_genre": research.get("inferred_genre"),
             "logline": sub.story,
-            "has_screenplay": bool(sub.script_text),
+            "has_screenplay": has_screenplay,
             "has_concept_frames": has_frames,
             "script_metrics": synthesis_inputs["script_metrics"],
             "vision": vision,
             "features": features,
-            "prediction": synthesis_inputs["prediction"],
+            "prediction": prediction_view,
             "confidence_interval": prediction["confidence_interval"],
             "model_metadata": prediction["model_metadata"],
             "risk_flags": risk_flags,

@@ -29,13 +29,25 @@ def score_from_rating(rating: float) -> int:
     return max(0, min(100, round(float(rating) * 10)))
 
 
-def outcome_for(score: int, cv_mae: Optional[float]) -> str:
+def outcome_for(
+    score: int,
+    cv_mae: Optional[float],
+    has_screenplay: bool = True,
+    degraded: bool = False,
+) -> str:
     """`inconclusive` whenever the uncertainty band straddles a boundary.
 
     92/100 corpus films rate >= 7.0 and 1/100 rates <= 5.0, so `miss` is close
     to unreachable. The band comes from cv_mae on the 0-100 scale, not from a
     fixed 50/70 cut a 0.1-star difference could flip.
+
+    A verdict also needs something behind it. With no screenplay the craft
+    features are corpus medians, so the score is a genre prior and not a
+    measurement of this submission; on a degraded run part of the evidence
+    never arrived. Both return `inconclusive` wherever the score lands.
     """
+    if not has_screenplay or degraded:
+        return "inconclusive"
     margin = float(cv_mae or 0.441) * 10.0
     lo, hi = score - margin, score + margin
     for boundary in (50, 70):
@@ -112,16 +124,15 @@ def slot_findings(report: Dict[str, Any]) -> Dict[str, str]:
     """Deterministic slots from the measurements; research slots from synthesis."""
     synthesis = report.get("synthesis") or {}
     written = {f["slot"]: f["finding"] for f in synthesis.get("findings", [])}
-    audience_claims = claims_for("audience", report)
-    market_claims = claims_for("market", report)
-    return {
-        "story": story_finding(report),
-        "visual": visual_finding(report),
-        "audience": written.get("audience") or _claims_fallback(audience_claims,
-                                                               "craft precedent"),
-        "market": written.get("market") or _claims_fallback(market_claims,
-                                                            "trope fatigue and comparables"),
-    }
+    findings = {"story": story_finding(report), "visual": visual_finding(report)}
+    for slot, label in (("audience", "craft precedent"),
+                        ("market", "trope fatigue and comparables")):
+        # a failed slot reports why it failed; synthesis prose cannot cover for it
+        findings[slot] = (
+            failed_slot_finding(label, report) if slot_status(slot, report) == "failed"
+            else written.get(slot) or _claims_fallback(claims_for(slot, report), label)
+        )
+    return findings
 
 
 def _claims_fallback(claims: List[Dict[str, Any]], label: str) -> str:
@@ -130,6 +141,17 @@ def _claims_fallback(claims: List[Dict[str, Any]], label: str) -> str:
     return f"{len(claims)} sourced claim(s) on {label}: " + " ".join(
         c["claim"] for c in claims[:2]
     )
+
+
+def failed_slot_finding(label: str, report: Dict[str, Any]) -> str:
+    """A failed slot names every reason the run recorded, not just the first.
+
+    A degradation the run knew about but the producer never sees is a silent
+    failure, so the reasons go in the panel as well as in the summary.
+    """
+    reasons = report.get("degradation_reasons") or []
+    head = f"No sourced {label} research reached the report."
+    return head + (" Reasons: " + "; ".join(reasons) + "." if reasons else "")
 
 
 def claims_for(slot: str, report: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -150,10 +172,30 @@ def slot_status(slot: str, report: Dict[str, Any]) -> str:
     return "complete" if claims_for(slot, report) else "partial"
 
 
+def baseline_only_statement(report: Dict[str, Any]) -> str:
+    """The whole model signal in concept mode: the genre prior, and nothing more.
+
+    Narrating a craft residual here would describe the corpus median film,
+    because that is what `DEFAULT_FEATURE_VALUES` is.
+    """
+    p = report["prediction"]
+    return (
+        "Genre baseline only: no screenplay submitted, so no craft measurements. "
+        f"Corpus prior for {report.get('genre') or 'this genre'} is "
+        f"{p['genre_baseline_rating']}/10 (±{p.get('cv_mae')} cv_mae)."
+    )
+
+
 def model_signals(report: Dict[str, Any]) -> List[Tuple[str, str]]:
     """(title, statement) pairs; noise-floor counterfactuals lead."""
     p = report["prediction"]
     cv_mae = p.get("cv_mae")
+    if not report["has_screenplay"]:
+        # no sweep and no residual to report, so no counterfactual cards either
+        return [("Model signal", baseline_only_statement(report))] + [
+            ("Recommendation", rec["text"])
+            for rec in (report.get("synthesis") or {}).get("recommendations", [])
+        ]
     leading = best_rows_per_feature(report.get("sweep") or [])
     signals = [("Counterfactual", sweep_statement(r, cv_mae)) for r in leading]
     signals.append((
@@ -182,6 +224,18 @@ def degradation_notice(report: Dict[str, Any]) -> str:
     return "DEGRADED RUN — " + "; ".join(reasons) + ". "
 
 
+def score_note(report: Dict[str, Any]) -> str:
+    """What the reported score actually is, whenever it is not a measurement."""
+    if report["has_screenplay"]:
+        return ""
+    p = report["prediction"]
+    return (
+        f"The score is the {report.get('genre') or 'genre'} corpus prior "
+        f"({p['genre_baseline_rating']}/10, ±{p.get('cv_mae')}), not a measurement of "
+        "this submission: no screenplay was submitted, so no craft feature was measured. "
+    )
+
+
 def summary_for(report: Dict[str, Any]) -> str:
     """Leads with direction and evidence. The verdict is not the headline."""
     synthesis = report.get("synthesis") or {}
@@ -194,4 +248,5 @@ def summary_for(report: Dict[str, Any]) -> str:
             f"{p['expected_rating']}/10 against a {p['genre_baseline_rating']}/10 genre "
             f"prior, within its own ±{p['cv_mae']} error bar."
         )
-    return (degradation_notice(report) if report.get("degraded") else "") + body
+    prefix = (degradation_notice(report) if report.get("degraded") else "") + score_note(report)
+    return prefix + body
