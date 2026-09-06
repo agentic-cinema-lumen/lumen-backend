@@ -3,8 +3,10 @@
 Asserts externally observable behaviour and structural invariants: research
 evidence carries a live source URL, no number in a model signal is absent from
 the deterministic layer, an all-inside-the-noise-floor submission is not sold as
-a verdict, concept mode returns the same schema with its craft slots not
-complete, and a mocked run says so. Nothing here asserts prose or call order.
+a verdict, a run with no screenplay or a degraded run returns no verdict at all,
+concept mode returns the same schema with its craft slots not complete and no
+craft residual narrated, and every degradation reason the run recorded reaches
+both the summary and the failed panels. Nothing here asserts prose or call order.
 
 Both LLM subagents are recorded fixtures. LIVE_AGENTS=1 adds a live run.
 """
@@ -175,6 +177,33 @@ def test_outcome_is_inconclusive_across_a_straddled_boundary():
     assert M.outcome_for(20, 0.441) == "miss"
 
 
+def test_a_verdict_needs_something_behind_it():
+    """No screenplay and no evidence is not a `hit`, wherever the score lands."""
+    assert M.outcome_for(90, 0.441) == "hit"
+    assert M.outcome_for(90, 0.441, has_screenplay=False) == "inconclusive"
+    assert M.outcome_for(90, 0.441, degraded=True) == "inconclusive"
+    assert M.outcome_for(20, 0.441, has_screenplay=False) == "inconclusive"
+
+
+def test_concept_mode_has_no_verdict_and_says_what_the_score_is(stubbed):
+    """The observed defect: four failed slots, `outcome: hit`, `score: 80`."""
+    b = client.post("/v1/predictions", json=PAYLOAD).json()
+    assert b["outcome"] == "inconclusive"
+    assert b["score"] > 0  # the genre prior is still worth reporting
+    assert "prior" in b["summary"].lower()
+    assert "no screenplay" in b["summary"].lower()
+
+
+def test_a_degraded_run_has_no_verdict(monkeypatch):
+    monkeypatch.setattr(api._agent, "orchestrator", stub_orchestrator(
+        StubResearchAgent(claims=[], degraded=True, reasons=["no GEMINI_API_KEY"]),
+        StubSynthesisAgent(),
+    ))
+    r = client.post("/v1/predictions", json={**PAYLOAD, "materials": [_script_material()]})
+    assert r.status_code == 200, r.text
+    assert r.json()["outcome"] == "inconclusive"
+
+
 def test_confidence_ignores_distance_to_the_threshold():
     """Same score, more evidence and a better model: confidence must move."""
     thin = M.confidence_for(0, 0.441, True, False)
@@ -197,6 +226,22 @@ def test_concept_mode_returns_the_same_schema_with_craft_slots_not_complete(stub
     assert status["visual"] != "complete"
     story = next(a for a in b["agents"] if a["agentId"] == "story")
     assert "screenplay" in story["finding"].lower()
+
+
+def test_concept_mode_narrates_no_craft_residual_or_counterfactual(stubbed):
+    """With no screenplay the features are corpus medians, so there is nothing to sweep."""
+    b = client.post("/v1/predictions", json=PAYLOAD).json()
+    signals = [e for e in b["evidence"] if e["sourceType"] == "model_signal"]
+    assert not [e for e in signals if e["title"] == "Counterfactual"], signals
+    statement = next(e["statement"] for e in signals if e["title"] == "Model signal")
+    assert "no screenplay" in statement.lower(), statement
+    assert "residual" not in " ".join(e["statement"] for e in signals).lower()
+
+
+def test_concept_mode_skips_the_sweep_and_the_vulnerabilities(stubbed):
+    report = api._agent.run_premortem(story=PAYLOAD["story"], title="The Long Night")
+    assert report["sweep"] == []
+    assert report["risk_flags"] == []
 
 
 def test_script_mode_completes_the_craft_slots(stubbed):
@@ -243,6 +288,28 @@ def test_research_failure_does_not_complete_the_research_slots(monkeypatch):
     status = {a["agentId"]: a["status"] for a in b["agents"]}
     assert status["audience"] == "failed"
     assert status["market"] == "failed"
+
+
+def test_every_degradation_reason_reaches_the_summary_and_the_failed_slots(monkeypatch):
+    """A reason the run recorded but the producer never sees is a silent failure."""
+    reasons = [
+        "search results are mock output, not live retrieval",
+        "research agent call failed: ServerError: 503 UNAVAILABLE",
+        "4 of 4 claim(s) dropped by the grounding filter; none survived",
+    ]
+    monkeypatch.setattr(api._agent, "orchestrator", stub_orchestrator(
+        StubResearchAgent(claims=[], degraded=True, reasons=reasons),
+        StubSynthesisAgent(),
+    ))
+    b = client.post("/v1/predictions", json=PAYLOAD).json()
+    assert b["summary"].startswith("DEGRADED RUN")
+    for reason in reasons:
+        assert reason in b["summary"], reason
+    for slot in ("audience", "market"):
+        agent = next(a for a in b["agents"] if a["agentId"] == slot)
+        assert agent["status"] == "failed"
+        for reason in reasons:
+            assert reason in agent["finding"], (slot, reason)
 
 
 # ---------------------------------------------------------------- materials

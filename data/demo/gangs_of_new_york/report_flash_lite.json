@@ -1,0 +1,352 @@
+{
+  "mode": "orchestrated_premortem",
+  "title": "Untitled",
+  "genre": "Historical Crime Drama",
+  "inferred_genre": "Historical Crime Drama",
+  "logline": "A young man returns to the immigrant slum where his father was killed in a street battle two decades earlier, and works his way into the confidence of the warlord who did it. His revenge ripens while the city around him boils over into a riot against a wartime draft.",
+  "has_screenplay": true,
+  "has_concept_frames": true,
+  "script_metrics": {
+    "total_scenes": 121,
+    "characters_count": 100,
+    "dialogue_ratio": 0.402,
+    "estimated_duration_min": 194.2,
+    "cuts_per_minute": 15.48,
+    "words_per_minute": 74.8,
+    "climax_acceleration": 1.378
+  },
+  "vision": {
+    "image_count": 10,
+    "mean_luminance": 60.98,
+    "luminance_std": 35.97,
+    "mean_contrast": 48.12,
+    "dark_frame_ratio": 0.5,
+    "severe_darkness_penalty": 2.5,
+    "visual_style_summary": "Visuals exhibit heavy low-key chiaroscuro with extreme shadows (mean luminance: 61.0, dark frame ratio: 50.0%). Highly atmospheric in theater mastering, but carries severe risk of viewer backlash under standard consumer TV gamma and streaming bitrate compression.",
+    "visual_risk_flags": [
+      "HIGH_DARKNESS_RISK: Over 40% of frames are sub-40 luminance, prone to streaming compression artifacts."
+    ]
+  },
+  "features": {
+    "total_duration_min": 194.2,
+    "cuts_per_minute": 15.48,
+    "pacing_acceleration": 1.378,
+    "average_shot_length": 3.88,
+    "words_per_minute": 74.8,
+    "lines_per_minute": 6.23,
+    "dialogue_shot_ratio": 0.402,
+    "mean_luminance": 60.98,
+    "luminance_std": 35.97,
+    "dark_frame_ratio": 0.5,
+    "title": "Untitled"
+  },
+  "prediction": {
+    "expected_rating": 8.09,
+    "genre_baseline_rating": 7.83,
+    "craft_residual_delta": 0.26,
+    "cv_mae": 0.435,
+    "cv_r2": 0.145
+  },
+  "confidence_interval": {
+    "lower": 7.66,
+    "upper": 8.53,
+    "margin_of_error": 0.435
+  },
+  "model_metadata": {
+    "model_type": "ridge",
+    "cv_mae": 0.435,
+    "cv_rmse": 0.591,
+    "cv_r2": 0.145,
+    "training_samples": 90
+  },
+  "risk_flags": [
+    {
+      "severity": "HIGH",
+      "category": "Cinematography",
+      "issue": "Extreme Darkness & Low Lighting Legibility",
+      "detail": "50.0% of keyframes are sub-40 luminance.",
+      "remedy": "Elevate shadow exposure and mid-tone contrast to prevent streaming compression crush on consumer displays."
+    }
+  ],
+  "sweep": [
+    {
+      "feature": "dark_frame_ratio",
+      "value": 0.5,
+      "delta": 0.0,
+      "inside_noise_floor": true
+    },
+    {
+      "feature": "dark_frame_ratio",
+      "value": 0.55,
+      "delta": -0.02,
+      "inside_noise_floor": true
+    },
+    {
+      "feature": "dark_frame_ratio",
+      "value": 0.4,
+      "delta": 0.03,
+      "inside_noise_floor": true
+    },
+    {
+      "feature": "dark_frame_ratio",
+      "value": 0.25,
+      "delta": 0.09,
+      "inside_noise_floor": true
+    },
+    {
+      "feature": "dark_frame_ratio",
+      "value": 0.1,
+      "delta": 0.15,
+      "inside_noise_floor": true
+    },
+    {
+      "feature": "total_duration_min",
+      "value": 194.2,
+      "delta": 0.0,
+      "inside_noise_floor": true
+    },
+    {
+      "feature": "total_duration_min",
+      "value": 165.0,
+      "delta": -0.15,
+      "inside_noise_floor": true
+    },
+    {
+      "feature": "total_duration_min",
+      "value": 150.0,
+      "delta": -0.22,
+      "inside_noise_floor": true
+    },
+    {
+      "feature": "total_duration_min",
+      "value": 135.0,
+      "delta": -0.3,
+      "inside_noise_floor": true
+    },
+    {
+      "feature": "total_duration_min",
+      "value": 120.0,
+      "delta": -0.37,
+      "inside_noise_floor": true
+    },
+    {
+      "feature": "pacing_acceleration",
+      "value": 1.378,
+      "delta": 0.0,
+      "inside_noise_floor": true
+    },
+    {
+      "feature": "pacing_acceleration",
+      "value": 1.1,
+      "delta": 0.03,
+      "inside_noise_floor": true
+    },
+    {
+      "feature": "pacing_acceleration",
+      "value": 1.3,
+      "delta": 0.01,
+      "inside_noise_floor": true
+    },
+    {
+      "feature": "pacing_acceleration",
+      "value": 1.5,
+      "delta": -0.02,
+      "inside_noise_floor": true
+    },
+    {
+      "feature": "pacing_acceleration",
+      "value": 1.75,
+      "delta": -0.05,
+      "inside_noise_floor": true
+    }
+  ],
+  "claims": [
+    {
+      "category": "craft_precedent",
+      "valence": "negative",
+      "claim": "Extremely dark cinematography can frustrate viewers and obscure important narrative elements if the visual presentation suffers from technical limitations like streaming compression.",
+      "evidence": "Unless you had an OLED in a pitch black room, the battle was incomprehensible.",
+      "source_url": "https://www.reddit.com/r/television/comments/bjp78s/post_episode_discussion_lighting_controversy/"
+    },
+    {
+      "category": "craft_precedent",
+      "valence": "negative",
+      "claim": "While some directors argue that darkness enhances immersion, it risks turning significant character moments into confusing visuals.",
+      "evidence": "the visual muddying distracted viewers and turned crucial character deaths into confusing visual chaos.",
+      "source_url": "https://www.avclub.com/tv/reviews/long-night-battle-review"
+    },
+    {
+      "category": "trope_fatigue",
+      "valence": "negative",
+      "claim": "Audience sentiment indicates a specific fatigue toward dark visuals when they appear to be a stylistic crutch for poorly staged action.",
+      "evidence": "Surveys indicate viewers are most fatigued by unearned third-act twists, abandoned subplots, and excessive darkness hiding poor action staging.",
+      "source_url": "https://www.ign.com/articles/tv-tropes-audience-fatigue/"
+    }
+  ],
+  "dropped_claims": [],
+  "queries_executed": [
+    "films with extreme darkness low lighting cinematography reception",
+    "revenge in immigrant slum warlord movie trope fatigue",
+    "films about immigrant slums warlord revenge wartime draft riots"
+  ],
+  "retrieved_urls": [
+    "https://www.reddit.com/r/television/comments/bjp78s/post_episode_discussion_lighting_controversy/",
+    "https://www.indiewire.com/features/craft/cinematography-lighting-darkness-battle-1202129574/",
+    "https://www.avclub.com/tv/reviews/long-night-battle-review",
+    "https://www.reddit.com/r/television/comments/imdb_rating_dynamics/",
+    "https://www.ign.com/articles/tv-tropes-audience-fatigue/"
+  ],
+  "synthesis": {
+    "summary": "The project is positioned to perform at an expected rating of 8.09, which sits above the genre baseline of 7.83, though the craft residual delta of 0.26 is smaller than the model's margin of error of 0.435. The narrative potential for a historical crime drama is clear, but the visual execution relies on a dark aesthetic that research warns may cause viewer frustration regarding clarity and engagement.",
+    "findings": [
+      {
+        "slot": "story",
+        "finding": "The screenplay presents a robust narrative framework with a calculated climax acceleration of 1.378. Because this metric falls within the model's noise floor, the pacing should be considered a stylistic choice rather than a statistical predictor of success."
+      },
+      {
+        "slot": "visual",
+        "finding": "The dark_frame_ratio is 0.5, which aligns with research identifying potential risks for viewer legibility and engagement. While the model shows that shifting this ratio results in changes well within the noise floor, external evidence suggests that excessive darkness may be perceived as a stylistic crutch that obscures narrative detail."
+      },
+      {
+        "slot": "audience",
+        "finding": "Research indicates audience fatigue regarding visuals that prioritize darkness over staging clarity. While the model does not identify this as a statistically significant defect, audience precedent suggests that failing to maintain visual legibility can turn character moments into confusing visual chaos."
+      },
+      {
+        "slot": "market",
+        "finding": "The project leans into established historical crime tropes that are currently well-received. No specific market risks were identified regarding the genre itself, provided the production avoids the common pitfall of using visual darkness to hide poor action choreography."
+      }
+    ],
+    "recommendations": [
+      {
+        "text": "Prioritize clarity in key narrative sequences by adjusting shadow exposure, as research warns that excessive darkness can frustrate audiences even if the impact on the model's rating remains statistically negligible.",
+        "feature": "dark_frame_ratio"
+      },
+      {
+        "text": "Maintain the current runtime of 194.2 minutes as a creative choice, noting that variations in duration in our model do not provide a statistically significant deviation from the projected rating.",
+        "feature": "total_duration_min"
+      }
+    ]
+  },
+  "tool_events": [
+    {
+      "phase": "tool_start",
+      "tool": "parallel_search",
+      "args": {
+        "query": "films with extreme darkness low lighting cinematography reception"
+      }
+    },
+    {
+      "phase": "tool_end",
+      "tool": "parallel_search",
+      "args": {
+        "query": "films with extreme darkness low lighting cinematography reception"
+      },
+      "result_count": 3
+    },
+    {
+      "phase": "tool_start",
+      "tool": "parallel_search",
+      "args": {
+        "query": "revenge in immigrant slum warlord movie trope fatigue"
+      }
+    },
+    {
+      "phase": "tool_end",
+      "tool": "parallel_search",
+      "args": {
+        "query": "revenge in immigrant slum warlord movie trope fatigue"
+      },
+      "result_count": 2
+    },
+    {
+      "phase": "tool_start",
+      "tool": "parallel_search",
+      "args": {
+        "query": "films about immigrant slums warlord revenge wartime draft riots"
+      }
+    },
+    {
+      "phase": "tool_end",
+      "tool": "parallel_search",
+      "args": {
+        "query": "films about immigrant slums warlord revenge wartime draft riots"
+      },
+      "result_count": 2
+    },
+    {
+      "phase": "tool_start",
+      "tool": "set_model_response",
+      "args": {
+        "queries_executed": [
+          "films with extreme darkness low lighting cinematography reception",
+          "revenge in immigrant slum warlord movie trope fatigue",
+          "films about immigrant slums warlord revenge wartime draft riots"
+        ],
+        "claims": [
+          {
+            "valence": "negative",
+            "category": "craft_precedent",
+            "claim": "Extremely dark cinematography can frustrate viewers and obscure important narrative elements if the visual presentation suffers from technical limitations like streaming compression.",
+            "evidence": "Unless you had an OLED in a pitch black room, the battle was incomprehensible.",
+            "source_url": "https://www.reddit.com/r/television/comments/bjp78s/post_episode_discussion_lighting_controversy/"
+          },
+          {
+            "claim": "While some directors argue that darkness enhances immersion, it risks turning significant character moments into confusing visuals.",
+            "evidence": "the visual muddying distracted viewers and turned crucial character deaths into confusing visual chaos.",
+            "category": "craft_precedent",
+            "source_url": "https://www.avclub.com/tv/reviews/long-night-battle-review",
+            "valence": "negative"
+          },
+          {
+            "evidence": "Surveys indicate viewers are most fatigued by unearned third-act twists, abandoned subplots, and excessive darkness hiding poor action staging.",
+            "category": "trope_fatigue",
+            "claim": "Audience sentiment indicates a specific fatigue toward dark visuals when they appear to be a stylistic crutch for poorly staged action.",
+            "source_url": "https://www.ign.com/articles/tv-tropes-audience-fatigue/",
+            "valence": "negative"
+          }
+        ],
+        "inferred_genre": "Historical Crime Drama"
+      }
+    },
+    {
+      "phase": "tool_end",
+      "tool": "set_model_response",
+      "args": {
+        "queries_executed": [
+          "films with extreme darkness low lighting cinematography reception",
+          "revenge in immigrant slum warlord movie trope fatigue",
+          "films about immigrant slums warlord revenge wartime draft riots"
+        ],
+        "claims": [
+          {
+            "valence": "negative",
+            "category": "craft_precedent",
+            "claim": "Extremely dark cinematography can frustrate viewers and obscure important narrative elements if the visual presentation suffers from technical limitations like streaming compression.",
+            "evidence": "Unless you had an OLED in a pitch black room, the battle was incomprehensible.",
+            "source_url": "https://www.reddit.com/r/television/comments/bjp78s/post_episode_discussion_lighting_controversy/"
+          },
+          {
+            "claim": "While some directors argue that darkness enhances immersion, it risks turning significant character moments into confusing visuals.",
+            "evidence": "the visual muddying distracted viewers and turned crucial character deaths into confusing visual chaos.",
+            "category": "craft_precedent",
+            "source_url": "https://www.avclub.com/tv/reviews/long-night-battle-review",
+            "valence": "negative"
+          },
+          {
+            "evidence": "Surveys indicate viewers are most fatigued by unearned third-act twists, abandoned subplots, and excessive darkness hiding poor action staging.",
+            "category": "trope_fatigue",
+            "claim": "Audience sentiment indicates a specific fatigue toward dark visuals when they appear to be a stylistic crutch for poorly staged action.",
+            "source_url": "https://www.ign.com/articles/tv-tropes-audience-fatigue/",
+            "valence": "negative"
+          }
+        ],
+        "inferred_genre": "Historical Crime Drama"
+      },
+      "result_count": 0
+    }
+  ],
+  "degraded": true,
+  "degradation_reasons": [
+    "search results are mock output, not live retrieval"
+  ]
+}

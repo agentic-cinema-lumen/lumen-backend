@@ -179,9 +179,15 @@ def _to_response(report: Dict[str, Any], req: PredictionRequest) -> PredictionRe
     """Map the orchestrator's report onto the contract. No arithmetic beyond copying."""
     prediction = report["prediction"]
     cv_mae = prediction.get("cv_mae")
-    score = M.score_from_rating(prediction["expected_rating"])
     claims = report.get("claims") or []
     degraded = bool(report.get("degraded"))
+    has_screenplay = bool(report.get("has_screenplay"))
+    # Without a screenplay `expected_rating` is the corpus median film in this
+    # genre, so the genre prior is the only number that describes the submission.
+    score = M.score_from_rating(
+        prediction["expected_rating"] if has_screenplay
+        else prediction["genre_baseline_rating"]
+    )
 
     findings = M.slot_findings(report)
     agents = [
@@ -218,11 +224,9 @@ def _to_response(report: Dict[str, Any], req: PredictionRequest) -> PredictionRe
     model = _quant.champion_model
     return PredictionResponse(
         predictionId=uuid.uuid4(),
-        outcome=M.outcome_for(score, cv_mae),
+        outcome=M.outcome_for(score, cv_mae, has_screenplay, degraded),
         score=score,
-        confidence=M.confidence_for(
-            len(claims), cv_mae, report.get("has_screenplay", False), degraded
-        ),
+        confidence=M.confidence_for(len(claims), cv_mae, has_screenplay, degraded),
         summary=M.summary_for(report),
         agents=agents,
         evidence=evidence,
