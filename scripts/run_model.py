@@ -39,6 +39,7 @@ def run_cli():
     parser.add_argument("--luminance", type=float, default=None, help="Mean keyframe luminance (0 to 255)")
     parser.add_argument("--wpm", type=float, default=None, help="Dialogue velocity in words per minute")
     parser.add_argument("--export", type=str, help="Save evaluation JSON to destination file")
+    parser.add_argument("--sweep", action="store_true", help="Run 15-point deterministic counterfactual sensitivity sweep")
     parser.add_argument("--tool-spec", action="store_true", help="Print standard LLM / MCP tool schema")
     parser.add_argument("--decision-history", action="store_true", help="Print ML Engineering Agent decision history markdown")
 
@@ -117,6 +118,19 @@ def run_cli():
 
     meta = result["model_metadata"]
     print(f"\n🤖 Champion Model: {meta['model_type'].upper()} (CV MAE: {meta['cv_mae']}, CV RMSE: {meta['cv_rmse']}, N={meta['training_samples']} real films)")
+
+    if args.sweep:
+        from src.quant.sweep import run_counterfactual_sweep
+        sweep_res = run_counterfactual_sweep(result["input_craft_features"], oracle=oracle)
+        print("\n" + "=" * 70)
+        print("🔬 15-POINT DETERMINISTIC COUNTERFACTUAL SENSITIVITY SWEEP")
+        print("=" * 70)
+        print(sweep_res["formatted_table"])
+        print("-" * 70)
+        print(f"🎯 Noise Floor: ±{sweep_res['noise_floor_mae']:.2f} MAE | Max Observed Craft Delta: {sweep_res['max_delta']:+.2f}")
+        print(f"⚖️  Outcome Verdict: {sweep_res['outcome'].upper()}")
+        print(f"ℹ️  {sweep_res['confidence_summary']}")
+        result["counterfactual_sweep"] = sweep_res
 
     if args.export:
         out_p = Path(args.export).resolve()
