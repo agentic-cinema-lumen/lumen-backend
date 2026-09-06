@@ -34,7 +34,7 @@
     "validation_errors": [
       "implausible runtime: 2.7 min (expected 60-240)",
       "too few scenes: 1 (expected >= 4)",
-      "implausible character count: 0 (expected 3-80)",
+      "implausible character count: 0 (expected 3-150)",
       "implausible dialogue ratio: 0.0 (expected 0.10-0.85)"
     ]
   },

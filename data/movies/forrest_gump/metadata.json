@@ -125,9 +125,6 @@
       "YOUNG HIPPIE",
       "YOUNG MAN",
       "YOUNG PRIVATE"
-    ],
-    "validation_errors": [
-      "implausible character count: 94 (expected 3-80)"
     ]
   },
   "cv_metrics": {

@@ -135,9 +135,6 @@
       "VOICE",
       "WALDO",
       "_"
-    ],
-    "validation_errors": [
-      "implausible character count: 105 (expected 3-80)"
     ]
   },
   "cv_metrics": {

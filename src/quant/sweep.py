@@ -58,7 +58,7 @@ def run_sweep(submission: SubmissionOracle) -> List[Dict[str, Any]]:
     """
     base = submission.baseline()
     base_rating = base["expected_rating"]
-    noise_floor = float(base["model_metadata"].get("cv_mae") or 0.498)
+    noise_floor = float(base["model_metadata"].get("cv_mae") or 0.435)
 
     rows: List[Dict[str, Any]] = []
     for feature, grid in SWEEP_RANGES.items():

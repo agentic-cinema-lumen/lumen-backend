@@ -35,7 +35,7 @@
     ],
     "validation_errors": [
       "too few scenes: 2 (expected >= 4)",
-      "implausible character count: 1 (expected 3-80)",
+      "implausible character count: 1 (expected 3-150)",
       "implausible dialogue ratio: 0.001 (expected 0.10-0.85)"
     ]
   },

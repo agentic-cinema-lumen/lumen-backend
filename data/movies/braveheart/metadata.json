@@ -113,9 +113,6 @@
       "WILLIAM",
       "WOMAN",
       "YOUNG SOLDIER"
-    ],
-    "validation_errors": [
-      "implausible character count: 83 (expected 3-80)"
     ]
   },
   "cv_metrics": {

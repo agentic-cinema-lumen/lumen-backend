@@ -164,9 +164,6 @@
       "WARDEN GARREN",
       "WOMAN",
       "YOUNG DOCTOR"
-    ],
-    "validation_errors": [
-      "implausible character count: 134 (expected 3-80)"
     ]
   },
   "cv_metrics": {

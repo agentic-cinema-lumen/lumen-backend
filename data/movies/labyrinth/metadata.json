@@ -32,7 +32,7 @@
     "characters_count": 0,
     "characters": [],
     "validation_errors": [
-      "implausible character count: 0 (expected 3-80)",
+      "implausible character count: 0 (expected 3-150)",
       "implausible dialogue ratio: 0.0 (expected 0.10-0.85)"
     ]
   },

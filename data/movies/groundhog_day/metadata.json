@@ -112,9 +112,6 @@
       "V RALPH",
       "WAITER",
       "WOMAN"
-    ],
-    "validation_errors": [
-      "implausible character count: 81 (expected 3-80)"
     ]
   },
   "cv_metrics": {

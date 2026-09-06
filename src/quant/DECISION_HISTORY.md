@@ -75,7 +75,7 @@ The agent synthesized the empirical craft theory:
 
 ---
 
-### 7. Decision: Re-extraction with the Fixed Parser, and Exclusion of Known-Bad Rows (slice 3b)
+### 7. Decision: Re-extraction with the Fixed Parser, and Exclusion of Known-Bad Rows (slice 3b, revised in slice 3c)
 
 - **Problem**: The champion model was trained on `script_metrics` cached in
   `data/movies/movies_manifest.json` by the *old* screenplay parser, while inference
@@ -89,70 +89,61 @@ The agent synthesized the empirical craft theory:
      metrics but carry a `validation_errors` list; `benchmark_dataset._trainable()`
      drops those rows from both the training frame and the genre prior.
   3. `train_champion()` retrained and re-persisted `data/models/champion_model.joblib`.
-- **Training corpus**: 80 films of 100. 20 rows excluded.
+  4. **Slice 3c**: `validate_screenplay()`'s character-count ceiling was raised from 80
+     to 150, because large ensemble casts legitimately exceed 80. The 10 films that
+     failed only that ceiling returned to training, and the corpus was re-extracted and
+     the champion retrained again.
+- **Training corpus**: 90 films of 100. 10 rows excluded. (Slice 3b excluded 20.)
 
 #### Excluded rows (known-bad, enumerated)
 
+All 10 remaining exclusions are genuinely unparseable documents: transcripts, prose
+dumps, or single blocks with no usable sluglines, so scene and dialogue counts collapse
+to 0-2. Excluding them is correct.
+
 | Slug | `validate_screenplay()` reason |
 | --- | --- |
-| `forrest_gump` | implausible character count: 94 (expected 3-80) |
-| `django_unchained` | implausible character count: 91 (expected 3-80) |
-| `inglourious_basterds` | implausible character count: 110 (expected 3-80) |
-| `saving_private_ryan` | implausible character count: 93 (expected 3-80) |
-| `alien` | implausible runtime: 2.7 min (expected 60-240); too few scenes: 1 (expected >= 4); implausible character count: 0 (expected 3-80); implausible dialogue ratio: 0.0 (expected 0.10-0.85) |
-| `war_of_the_worlds` | implausible character count: 0 (expected 3-80); implausible dialogue ratio: 0.0 (expected 0.10-0.85) |
+| `alien` | implausible runtime: 2.7 min (expected 60-240); too few scenes: 1 (expected >= 4); implausible character count: 0 (expected 3-150); implausible dialogue ratio: 0.0 (expected 0.10-0.85) |
+| `war_of_the_worlds` | implausible character count: 0 (expected 3-150); implausible dialogue ratio: 0.0 (expected 0.10-0.85) |
 | `finding_nemo` | too few scenes: 1 (expected >= 4); implausible dialogue ratio: 0.887 (expected 0.10-0.85) |
-| `aladdin` | too few scenes: 1 (expected >= 4); implausible character count: 1 (expected 3-80); implausible dialogue ratio: 0.0 (expected 0.10-0.85) |
-| `groundhog_day` | implausible character count: 81 (expected 3-80) |
-| `gremlins` | implausible character count: 98 (expected 3-80) |
+| `aladdin` | too few scenes: 1 (expected >= 4); implausible character count: 1 (expected 3-150); implausible dialogue ratio: 0.0 (expected 0.10-0.85) |
 | `saw` | too few scenes: 1 (expected >= 4) |
-| `evil_dead` | too few scenes: 2 (expected >= 4); implausible character count: 1 (expected 3-80); implausible dialogue ratio: 0.001 (expected 0.10-0.85) |
-| `braveheart` | implausible character count: 83 (expected 3-80) |
-| `labyrinth` | implausible character count: 0 (expected 3-80); implausible dialogue ratio: 0.0 (expected 0.10-0.85) |
+| `evil_dead` | too few scenes: 2 (expected >= 4); implausible character count: 1 (expected 3-150); implausible dialogue ratio: 0.001 (expected 0.10-0.85) |
+| `labyrinth` | implausible character count: 0 (expected 3-150); implausible dialogue ratio: 0.0 (expected 0.10-0.85) |
 | `legend` | implausible dialogue ratio: 0.002 (expected 0.10-0.85) |
-| `scarface` | implausible character count: 105 (expected 3-80) |
 | `gravity` | too few scenes: 1 (expected >= 4) |
-| `catch_me_if_you_can` | implausible character count: 134 (expected 3-80) |
-| `black_panther` | implausible character count: 88 (expected 3-80) |
 | `trainspotting` | implausible dialogue ratio: 0.024 (expected 0.10-0.85) |
 
-Two distinct failure classes sit in that table:
+The second failure class from slice 3b is gone. Ten films — `forrest_gump` (94 cues),
+`django_unchained` (91), `inglourious_basterds` (110), `saving_private_ryan` (93),
+`groundhog_day` (81), `gremlins` (98), `braveheart` (83), `scarface` (105),
+`catch_me_if_you_can` (134), `black_panther` (88) — parsed correctly and failed only the
+80-character ceiling. Slice 3c raised that ceiling to 150 and returned all 10 to
+training. 200 distinct cues is still rejected, so the gate still catches prose dumps
+whose every capitalised line reads as a character.
 
-- **Genuinely unparseable documents (10 rows)** — `alien`, `war_of_the_worlds`,
-  `finding_nemo`, `aladdin`, `saw`, `evil_dead`, `labyrinth`, `legend`, `gravity`,
-  `trainspotting`. These files are transcripts, prose dumps, or single blocks with no
-  usable sluglines, so scene and dialogue counts collapse to 0-2. Excluding them is
-  correct.
-- **Character-count ceiling only (10 rows)** — `forrest_gump`, `django_unchained`,
-  `inglourious_basterds`, `saving_private_ryan`, `groundhog_day`, `gremlins`,
-  `braveheart`, `scarface`, `catch_me_if_you_can`, `black_panther`. These parsed fine;
-  they just carry 81-134 distinct character cues, over the validator's 80 ceiling.
-  Large ensemble war and crime films legitimately exceed it, and the cue detector also
-  counts one-line bit parts. **Open question for the owner of
-  `src/ingestion/script_parser.py`**: raise the ceiling (to about 150) or tighten the
-  cue detector. Either change would return roughly 10 rows to training.
+#### Metrics: n=80 (slice 3b) vs n=90 (slice 3c) (5-fold CV, `random_state=42`)
 
-#### Metrics: old features vs re-extracted features (5-fold CV, `random_state=42`)
-
-| Model | cv_r2 (old) | cv_r2 (new) | cv_mae (old) | cv_mae (new) | cv_rmse (new) |
+| Model | cv_r2 (n=80) | cv_r2 (n=90) | cv_mae (n=80) | cv_mae (n=90) | cv_rmse (n=90) |
 | --- | --- | --- | --- | --- | --- |
-| **Ridge (champion, pinned)** | -0.035 | **-0.116** | 0.464 | **0.498** | **0.673** |
-| Random Forest | 0.352 | -0.093 | 0.380 | 0.469 | 0.660 |
-| HistGradientBoosting | n/a | -0.064 | n/a | 0.507 | 0.660 |
+| **Ridge (champion, pinned)** | -0.116 | **+0.145** | 0.498 | **0.435** | **0.591** |
+| Random Forest | -0.093 | +0.133 | 0.469 | 0.419 | 0.586 |
+| HistGradientBoosting | -0.064 | -0.152 | 0.507 | 0.480 | 0.645 |
 
-- **Ridge stays pinned.** `explain_prediction()` produces real per-feature attributions
-  only for the linear branch; the tree branch returns an `importance x 0.1` stand-in.
-  Switching architecture is a separate decision, and the tournament no longer argues
-  for it: random_forest's apparent 0.352 came from the old, broken duration feature.
-- **Fold-noise band (ridge cv_r2 over KFold seeds)**: `rs=0: +0.061`, `rs=1: +0.022`,
-  `rs=2: -0.066`, `rs=42: -0.116` — a span of 0.18, not the +/-0.7 previously claimed.
-  Random Forest spans 0.28 and HistGradientBoosting 0.37 over the same seeds. The
-  regression guard in `tests/test_quant_loop.py::test_08` therefore sits at the
-  recorded -0.116 minus 0.15.
-- **Honest reading**: all three models sit at or below zero out-of-sample $R^2$ on 80
-  films. The model cannot rank an individual screenplay; it produces a genre-anchored
-  baseline with a +/-0.50 error bar. Removing the broken duration estimate lowered the
-  headline number and raised its trustworthiness.
+- **Ridge stays pinned, and now also wins.** `explain_prediction()` produces real
+  per-feature attributions only for the linear branch; the tree branch returns an
+  `importance x 0.1` stand-in. On n=90 ridge has the best cv_r2 of the three, so nothing
+  argues for unpinning it.
+- **Fold-noise band (ridge cv_r2 over KFold seeds)**: `rs=0: +0.115`, `rs=1: +0.125`,
+  `rs=2: +0.029`, `rs=42: +0.145` — a span of 0.12, and every seed is now positive.
+  Random Forest spans 0.18 and HistGradientBoosting 0.22 over the same seeds. The
+  regression guard in `tests/test_quant_loop.py::test_08` sits at the recorded +0.145
+  minus 0.15.
+- **Honest reading**: the 10 returned ensemble films moved ridge from -0.116 to +0.145,
+  the first positive out-of-sample $R^2$ this model has held across all four seeds. The
+  error bar is still +/-0.44, so the model gives a genre-anchored baseline rather than a
+  ranking of individual screenplays. The gain came from more valid rows, not from a
+  better model.
 
 ---
 

@@ -1089,9 +1089,6 @@
         "YOUNG HIPPIE",
         "YOUNG MAN",
         "YOUNG PRIVATE"
-      ],
-      "validation_errors": [
-        "implausible character count: 94 (expected 3-80)"
       ]
     },
     "cv_metrics": {
@@ -1226,9 +1223,6 @@
         "WE FLASH ON",
         "WE GO TO BLACK",
         "WILLARD"
-      ],
-      "validation_errors": [
-        "implausible character count: 91 (expected 3-80)"
       ]
     },
     "cv_metrics": {
@@ -1382,9 +1376,6 @@
         "WILLI",
         "WINNETOU",
         "WUNDERBAR"
-      ],
-      "validation_errors": [
-        "implausible character count: 110 (expected 3-80)"
       ]
     },
     "cv_metrics": {
@@ -1634,9 +1625,6 @@
         "UPHAM",
         "VOICE FROM BRIDGE",
         "WADE"
-      ],
-      "validation_errors": [
-        "implausible character count: 93 (expected 3-80)"
       ]
     },
     "cv_metrics": {
@@ -1744,7 +1732,7 @@
       "validation_errors": [
         "implausible runtime: 2.7 min (expected 60-240)",
         "too few scenes: 1 (expected >= 4)",
-        "implausible character count: 0 (expected 3-80)",
+        "implausible character count: 0 (expected 3-150)",
         "implausible dialogue ratio: 0.0 (expected 0.10-0.85)"
       ]
     },
@@ -1933,7 +1921,7 @@
       "characters_count": 0,
       "characters": [],
       "validation_errors": [
-        "implausible character count: 0 (expected 3-80)",
+        "implausible character count: 0 (expected 3-150)",
         "implausible dialogue ratio: 0.0 (expected 0.10-0.85)"
       ]
     },
@@ -2231,7 +2219,7 @@
       ],
       "validation_errors": [
         "too few scenes: 1 (expected >= 4)",
-        "implausible character count: 1 (expected 3-80)",
+        "implausible character count: 1 (expected 3-150)",
         "implausible dialogue ratio: 0.0 (expected 0.10-0.85)"
       ]
     },
@@ -2464,9 +2452,6 @@
         "V RALPH",
         "WAITER",
         "WOMAN"
-      ],
-      "validation_errors": [
-        "implausible character count: 81 (expected 3-80)"
       ]
     },
     "cv_metrics": {
@@ -2608,9 +2593,6 @@
         "TWO CREATURES",
         "TWO GREEN EYES BURN",
         "UPSTAIRS HALLWAY"
-      ],
-      "validation_errors": [
-        "implausible character count: 98 (expected 3-80)"
       ]
     },
     "cv_metrics": {
@@ -4155,7 +4137,7 @@
       ],
       "validation_errors": [
         "too few scenes: 2 (expected >= 4)",
-        "implausible character count: 1 (expected 3-80)",
+        "implausible character count: 1 (expected 3-150)",
         "implausible dialogue ratio: 0.001 (expected 0.10-0.85)"
       ]
     },
@@ -4416,9 +4398,6 @@
         "WILLIAM",
         "WOMAN",
         "YOUNG SOLDIER"
-      ],
-      "validation_errors": [
-        "implausible character count: 83 (expected 3-80)"
       ]
     },
     "cv_metrics": {
@@ -4520,7 +4499,7 @@
       "characters_count": 0,
       "characters": [],
       "validation_errors": [
-        "implausible character count: 0 (expected 3-80)",
+        "implausible character count: 0 (expected 3-150)",
         "implausible dialogue ratio: 0.0 (expected 0.10-0.85)"
       ]
     },
@@ -4967,9 +4946,6 @@
         "VOICE",
         "WALDO",
         "_"
-      ],
-      "validation_errors": [
-        "implausible character count: 105 (expected 3-80)"
       ]
     },
     "cv_metrics": {
@@ -5480,9 +5456,6 @@
         "WARDEN GARREN",
         "WOMAN",
         "YOUNG DOCTOR"
-      ],
-      "validation_errors": [
-        "implausible character count: 134 (expected 3-80)"
       ]
     },
     "cv_metrics": {
@@ -6577,9 +6550,6 @@
         "YOUNGBLACKKID",
         "YOUNGKILLMONGER",
         "ZURI"
-      ],
-      "validation_errors": [
-        "implausible character count: 88 (expected 3-80)"
       ]
     },
     "cv_metrics": {

@@ -129,9 +129,6 @@
       "TWO CREATURES",
       "TWO GREEN EYES BURN",
       "UPSTAIRS HALLWAY"
-    ],
-    "validation_errors": [
-      "implausible character count: 98 (expected 3-80)"
     ]
   },
   "cv_metrics": {

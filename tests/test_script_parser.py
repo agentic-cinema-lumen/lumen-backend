@@ -114,6 +114,12 @@ class TestScreenplayValidationGate(unittest.TestCase):
     def test_real_screenplay_is_accepted(self):
         self.assertEqual(validate_screenplay(_parse_movie("fight_club")), [])
 
+    def test_large_ensemble_cast_is_accepted(self):
+        # ponytail: slice3c - 10 films (catch_me_if_you_can at 134) failed only the old 80 ceiling.
+        sane = {"estimated_duration_min": 140.0, "total_scenes": 120, "dialogue_ratio": 0.45}
+        self.assertEqual(validate_screenplay({**sane, "characters_count": 134}), [])
+        self.assertTrue(validate_screenplay({**sane, "characters_count": 200}))
+
 
 class TestDurationModel(unittest.TestCase):
     """Task 4: page-rate runtime model, checked as an aggregate bound over the corpus.

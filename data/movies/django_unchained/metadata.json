@@ -122,9 +122,6 @@
       "WE FLASH ON",
       "WE GO TO BLACK",
       "WILLARD"
-    ],
-    "validation_errors": [
-      "implausible character count: 91 (expected 3-80)"
     ]
   },
   "cv_metrics": {

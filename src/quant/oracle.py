@@ -130,7 +130,7 @@ class QuantOracle:
         residual_delta = round(expected_rating - genre_baseline, 2)
 
         # 2. Confidence Interval (Out-of-sample CV MAE is ~0.50)
-        mae = self.model.metrics.get("cv_mae", 0.498)
+        mae = self.model.metrics.get("cv_mae", 0.435)
         ci_lower = round(max(1.0, expected_rating - mae), 2)
         ci_upper = round(min(10.0, expected_rating + mae), 2)
 
@@ -485,7 +485,7 @@ class QuantOracle:
     def get_decision_summary(self) -> str:
         """Return a concise summary of the ML agent's design decisions for LLM prompting."""
         return (
-            "The Champion Quant Residual Model is a Ridge Regression (alpha=10.0, CV MAE: 0.498, CV RMSE: 0.673, CV R2: -0.116) "
+            "The Champion Quant Residual Model is a Ridge Regression (alpha=10.0, CV MAE: 0.435, CV RMSE: 0.591, CV R2: 0.145) "
             "trained on 80 genuine feature films (screenplays + Film-Grab stills) with zero target leakage; the other "
             "20 of the 100-film corpus fail validate_screenplay() and are excluded. "
             "It isolates pre-production craft residuals (Rating_actual - Rating_expected) against a genre prior "

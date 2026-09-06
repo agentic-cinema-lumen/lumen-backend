@@ -124,9 +124,6 @@
       "UPHAM",
       "VOICE FROM BRIDGE",
       "WADE"
-    ],
-    "validation_errors": [
-      "implausible character count: 93 (expected 3-80)"
     ]
   },
   "cv_metrics": {

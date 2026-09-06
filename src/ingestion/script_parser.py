@@ -68,8 +68,9 @@ def validate_screenplay(metrics: Dict[str, Any]) -> List[str]:
     if metrics.get("total_scenes", 0) < 4:
         reasons.append(f"too few scenes: {metrics.get('total_scenes', 0)} (expected >= 4)")
     characters = metrics.get("characters_count", 0)
-    if not 3 <= characters <= 80:
-        reasons.append(f"implausible character count: {characters} (expected 3-80)")
+    # ponytail: ceiling 150, not 80 - large ensemble casts legitimately exceed 80.
+    if not 3 <= characters <= 150:
+        reasons.append(f"implausible character count: {characters} (expected 3-150)")
     ratio = metrics.get("dialogue_ratio", 0.0)
     if not 0.10 <= ratio <= 0.85:
         reasons.append(f"implausible dialogue ratio: {ratio} (expected 0.10-0.85)")

@@ -141,9 +141,6 @@
       "WILLI",
       "WINNETOU",
       "WUNDERBAR"
-    ],
-    "validation_errors": [
-      "implausible character count: 110 (expected 3-80)"
     ]
   },
   "cv_metrics": {

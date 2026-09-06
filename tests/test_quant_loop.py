@@ -22,7 +22,7 @@ from src.quant.quant_agent import QuantAgent
 
 
 # Champion cv_r2 recorded after the fixed-parser re-extraction retrain (slice 3b).
-RECORDED_CHAMPION_CV_R2 = -0.116
+RECORDED_CHAMPION_CV_R2 = 0.145
 
 
 class TestQuantResidualEngine(unittest.TestCase):

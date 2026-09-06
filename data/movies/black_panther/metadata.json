@@ -118,9 +118,6 @@
       "YOUNGBLACKKID",
       "YOUNGKILLMONGER",
       "ZURI"
-    ],
-    "validation_errors": [
-      "implausible character count: 88 (expected 3-80)"
     ]
   },
   "cv_metrics": {
