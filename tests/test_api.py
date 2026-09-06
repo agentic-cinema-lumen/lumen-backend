@@ -1,6 +1,7 @@
 """Contract smoke check: both endpoints answer in the shapes the frontend expects."""
 import base64
 import os
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -48,7 +49,14 @@ def test_diagnostics():
 
 # ------------------------------------------------------- data: URI materials
 
-SCRIPT_TEXT = "INT. INTERROGATION ROOM - NIGHT\n\nShe slides the photograph across the table.\n"
+def _movie_script(name):
+    return (Path("data/movies") / name / "script.txt").read_text(encoding="utf-8", errors="replace")
+
+
+# a real screenplay, so it clears the validation gate in run_engine
+SCRIPT_TEXT = _movie_script("fight_club")
+# alien/script.txt is a plot synopsis, not a screenplay: the gate must reject it
+NOT_A_SCREENPLAY = _movie_script("alien")
 # 1x1 transparent PNG
 PNG_B64 = ("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk"
            "YPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==")
@@ -145,3 +153,24 @@ def test_rejects_unknown_uri_scheme():
 if __name__ == "__main__":
     test_prediction(); test_rejects_short_story(); test_diagnostics()
     print("ok")
+
+
+# ------------------------------------------------------- screenplay validation gate
+
+def test_non_screenplay_script_is_rejected(engine):
+    b64 = base64.b64encode(NOT_A_SCREENPLAY.encode()).decode()
+    r = client.post("/v1/predictions", json={**PAYLOAD, "materials": [
+        {"kind": "script", "uri": _data_uri("text/plain", b64), "mimeType": "text/plain"}]})
+    assert r.status_code == 400, r.text
+    detail = r.json()["detail"]
+    assert detail["error"] == "not_a_screenplay"
+    assert detail["reasons"]
+    assert "script" not in engine  # gate ran before the engine
+
+
+def test_real_screenplay_passes_the_gate(engine):
+    b64 = base64.b64encode(SCRIPT_TEXT.encode()).decode()
+    r = client.post("/v1/predictions", json={**PAYLOAD, "materials": [
+        {"kind": "script", "uri": _data_uri("text/plain", b64), "mimeType": "text/plain"}]})
+    assert r.status_code == 200, r.text
+    assert engine["script"] == SCRIPT_TEXT

@@ -25,6 +25,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
+from src.ingestion.script_parser import ScriptParser, validate_screenplay
 from src.utils.env_helper import load_env_file
 from src.premortem.premortem_agent import PreMortemAgent
 from src.quant.quant_agent import QuantAgent
@@ -157,6 +158,11 @@ def run_engine(req: PredictionRequest) -> Dict[str, Any]:
         script_text, keyframes = _fetch_materials(req.materials, Path(tmp))
         title = req.classifications.get("title", "Untitled Submission")
         if script_text:
+            metrics = ScriptParser().parse_script_text(script_text, title=title)
+            reasons = validate_screenplay(metrics)
+            if reasons:
+                raise HTTPException(400, {"error": "not_a_screenplay", "reasons": reasons})
+            # ponytail: the engine re-parses internally; it takes text, not pre-parsed metrics
             return _agent.run_script_premortem(
                 script_path_or_text=script_text, keyframes_path_or_dir=keyframes, title=title
             )
