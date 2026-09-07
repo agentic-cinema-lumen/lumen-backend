@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import asyncio
 import os
+import random
+import time
 import uuid
 from typing import Any, Callable, Dict, List, Optional
 
@@ -79,20 +81,41 @@ def run_agent(agent, prompt: str, output_key: str) -> List[Any]:
     from google.adk.runners import InMemoryRunner
     from google.genai import types
 
-    runner = InMemoryRunner(agent=agent, app_name=APP_NAME)
-    session_id = str(uuid.uuid4())
-    asyncio.run(
-        runner.session_service.create_session(
-            app_name=APP_NAME, user_id="lumen", session_id=session_id
-        )
-    )
-    outputs: List[Any] = []
-    message = types.Content(role="user", parts=[types.Part(text=prompt)])
-    for event in runner.run(user_id="lumen", session_id=session_id, new_message=message):
-        delta = getattr(event.actions, "state_delta", None) if event.actions else None
-        if delta and output_key in delta:
-            outputs.append(delta[output_key])
-    return outputs
+    max_retries = max(0, int(os.environ.get("LUMEN_LLM_MAX_RETRIES", "3")))
+    base_delay = max(0.1, float(os.environ.get("LUMEN_LLM_RETRY_BASE_SEC", "1.0")))
+
+    def retryable(exc: Exception) -> bool:
+        text = str(exc).lower()
+        return any(token in text for token in (
+            "429", "resource exhausted", "rate limit", "503", "service unavailable",
+            "temporarily unavailable", "deadline exceeded", "unavailable",
+        ))
+
+    for attempt in range(max_retries + 1):
+        try:
+            runner = InMemoryRunner(agent=agent, app_name=APP_NAME)
+            session_id = str(uuid.uuid4())
+            asyncio.run(
+                runner.session_service.create_session(
+                    app_name=APP_NAME, user_id="lumen", session_id=session_id
+                )
+            )
+            outputs: List[Any] = []
+            message = types.Content(role="user", parts=[types.Part(text=prompt)])
+            for event in runner.run(user_id="lumen", session_id=session_id, new_message=message):
+                delta = getattr(event.actions, "state_delta", None) if event.actions else None
+                if delta and output_key in delta:
+                    outputs.append(delta[output_key])
+            return outputs
+        except Exception as exc:
+            if attempt >= max_retries or not retryable(exc):
+                raise
+            # Exponential backoff with jitter prevents an agent burst from
+            # synchronizing its retries and amplifying Vertex AI 429s.
+            delay = min(20.0, base_delay * (2 ** attempt)) * random.uniform(0.5, 1.5)
+            time.sleep(delay)
+
+    raise RuntimeError("agent execution exhausted retry policy")
 
 
 def stop_after_output(state_key: str) -> Callable:
