@@ -41,8 +41,7 @@ gcloud run deploy "${SERVICE_NAME}" \
     --allow-unauthenticated \
     --memory "${MEMORY}" \
     --cpu "${CPU}" \
-    --timeout "${TIMEOUT}" \
-    --set-env-vars="LUMEN_AGENT_MODEL=gemini-2.0-flash"
+    --set-env-vars="LUMEN_AGENT_MODEL=gemini-3.7-flash,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=global"
 
 echo ""
 echo "✅ Deployment complete! Service URL:"

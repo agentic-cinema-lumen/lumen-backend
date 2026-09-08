@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
-from src.agents.adk_support import agent_model, has_gemini_key, run_agent
+from src.agents.adk_support import agent_model, create_adk_model, has_gemini_key, run_agent
 
 OUTPUT_KEY = "synthesis"
 
@@ -112,7 +112,7 @@ class SynthesisAgent:
 
         return LlmAgent(
             name="synthesis_agent",
-            model=self.model,
+            model=create_adk_model(self.model),
             description="Reconciles the craft model against the research and writes the report.",
             instruction=INSTRUCTION,
             output_schema=SynthesisReport,

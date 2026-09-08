@@ -25,15 +25,37 @@ if os.environ.get("GEMINI_API_KEY") and not os.environ.get("GOOGLE_API_KEY"):
 def agent_model() -> str:
     """Gemini model for both subagents.
 
-    Overridable because the free tier meters requests *per model per day*, so a
-    demo run that has exhausted one model can move to another without a code
-    change.
+    Defaults to gemini-3.7-flash, overridable via LUMEN_AGENT_MODEL.
     """
-    return os.environ.get("LUMEN_AGENT_MODEL", "gemini-3.6-flash")
+    return os.environ.get("LUMEN_AGENT_MODEL", "gemini-3.7-flash")
+
+
+def is_vertex_ai() -> bool:
+    """Return True if Vertex AI backend is configured."""
+    return os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").lower() in ("true", "1") or \
+           os.environ.get("GOOGLE_GENAI_USE_ENTERPRISE", "").lower() in ("true", "1")
 
 
 def has_gemini_key() -> bool:
+    """Return True if Gemini credentials are present (either via Vertex AI or API key)."""
+    if is_vertex_ai():
+        return bool(
+            os.environ.get("GOOGLE_CLOUD_PROJECT")
+            or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+            or os.environ.get("GOOGLE_API_KEY")
+            or os.environ.get("GEMINI_API_KEY")
+        )
     return bool(os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY"))
+
+
+def create_adk_model(model_name: Optional[str] = None):
+    """Instantiate an ADK Gemini model configured with retry options."""
+    from google.adk.models import Gemini
+    from google.genai import types
+
+    name = model_name or agent_model()
+    retry_options = types.HttpRetryOptions(initial_delay=2.0, attempts=3)
+    return Gemini(model=name, retry_options=retry_options)
 
 
 class ToolEventLog:

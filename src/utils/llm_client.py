@@ -25,13 +25,20 @@ class LLMClient:
         self.force_mock = force_mock
         self.gemini_key = os.environ.get("GEMINI_API_KEY")
         self.openai_key = os.environ.get("OPENAI_API_KEY")
+        use_vertex = os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").lower() in ("true", "1") or \
+                     os.environ.get("GOOGLE_GENAI_USE_ENTERPRISE", "").lower() in ("true", "1")
+        has_vertex_auth = use_vertex and bool(
+            os.environ.get("GOOGLE_CLOUD_PROJECT") or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") or self.gemini_key
+        )
+        self.use_vertex = use_vertex
+
         # Why a caller must be able to see this: silent mocking produced a
         # fabricated demo. A mocked run has to be able to announce itself.
         self.mock_reason: Optional[str] = None
 
-        if self.gemini_key and not self.force_mock:
+        if (self.gemini_key or has_vertex_auth) and not self.force_mock:
             self.provider = "gemini"
-            self.model = model or "gemini-3.6-flash"
+            self.model = model or os.environ.get("LUMEN_AGENT_MODEL", "gemini-3.7-flash")
         elif self.openai_key and not self.force_mock:
             self.provider = "openai"
             self.model = model or "gpt-4o-mini"
@@ -40,7 +47,7 @@ class LLMClient:
             self.model = "agent-mock-v1"
             self.mock_reason = (
                 "force_mock=True" if self.force_mock
-                else "no GEMINI_API_KEY or OPENAI_API_KEY in the environment"
+                else "no GEMINI_API_KEY, Vertex AI configuration, or OPENAI_API_KEY in the environment"
             )
 
     @property
@@ -69,20 +76,40 @@ class LLMClient:
         return self._mock_response(user_prompt)
 
     def _call_gemini(self, system_prompt: str, user_prompt: str, temperature: float) -> str:
-        """Call Google Gemini REST API."""
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.gemini_key}"
-        payload = {
-            "system_instruction": {"parts": [{"text": system_prompt}]},
-            "contents": [{"parts": [{"text": user_prompt}]}],
-            "generationConfig": {
-                "temperature": temperature,
-                "maxOutputTokens": 2048
-            }
-        }
-        res = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=30)
-        res.raise_for_status()
-        data = res.json()
-        return data["candidates"][0]["content"]["parts"][0]["text"]
+        """Call Google Gemini API via google.genai Client or REST fallback."""
+        try:
+            from google import genai
+            from google.genai import types
+
+            client = genai.Client()
+            config = types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                temperature=temperature,
+                max_output_tokens=2048,
+            )
+            response = client.models.generate_content(
+                model=self.model,
+                contents=user_prompt,
+                config=config,
+            )
+            return response.text or ""
+        except Exception:
+            # Fallback to direct REST if genai Client fails and we have a direct API key
+            if self.gemini_key:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.gemini_key}"
+                payload = {
+                    "system_instruction": {"parts": [{"text": system_prompt}]},
+                    "contents": [{"parts": [{"text": user_prompt}]}],
+                    "generationConfig": {
+                        "temperature": temperature,
+                        "maxOutputTokens": 2048
+                    }
+                }
+                res = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=30)
+                res.raise_for_status()
+                data = res.json()
+                return data["candidates"][0]["content"]["parts"][0]["text"]
+            raise
 
     def _call_openai(self, system_prompt: str, user_prompt: str, temperature: float) -> str:
         """Call OpenAI Chat Completions REST API."""

@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field
 from src.agents.adk_support import (
     ToolEventLog,
     agent_model,
+    create_adk_model,
     has_gemini_key,
     run_agent,
     stop_after_output,
@@ -159,7 +160,7 @@ class ResearchAgent:
         log = ToolEventLog(on_event=on_event)
         researcher = LlmAgent(
             name="research_agent",
-            model=self.model,
+            model=create_adk_model(self.model),
             description="Researches craft precedent, trope fatigue and comparable reception.",
             instruction=INSTRUCTION,
             tools=[search_tool],

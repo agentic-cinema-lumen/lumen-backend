@@ -38,5 +38,10 @@ data/cache/
 
 # Environment variables & API keys
 .env
+
+# Cloud SDK & local archives
+google-cloud-sdk/
+*.tar.gz
+
 .env.local
 .claude/worktrees/

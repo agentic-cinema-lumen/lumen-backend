@@ -7,7 +7,10 @@ ConceptInspector, oracle, sweep — runs for real. LIVE_AGENTS=1 adds a live run
 import os
 import unittest
 
-import pytest
+try:
+    import pytest
+except ImportError:
+    pytest = None
 
 from src.premortem.premortem_agent import PreMortemAgent
 from tests.stub_agents import StubResearchAgent, StubSynthesisAgent, stub_orchestrator
@@ -88,7 +91,7 @@ class TestOrchestratedPreMortem(unittest.TestCase):
         self.assertTrue(report["degradation_reasons"])
 
 
-@pytest.mark.skipif(os.environ.get("LIVE_AGENTS") != "1", reason="set LIVE_AGENTS=1")
+@unittest.skipIf(os.environ.get("LIVE_AGENTS") != "1", "set LIVE_AGENTS=1")
 def test_live_end_to_end():
     report = PreMortemAgent().run_premortem(
         story=LOGLINE, script_text=_script_text(), keyframes_dir=KEYFRAMES,
