@@ -14,9 +14,16 @@ import base64
 import json
 import os
 import re
-from pathlib import Path
+import unittest
 
-import pytest
+try:
+    import pytest
+except ImportError:
+    pytest = None
+
+if pytest is None:
+    raise unittest.SkipTest("pytest is required to run test_api (run with pytest)")
+
 from fastapi.testclient import TestClient
 
 import api

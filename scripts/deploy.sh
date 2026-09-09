@@ -14,6 +14,13 @@ echo "======================================================================"
 echo "🎬 Deploying ${SERVICE_NAME} to Google Cloud Run (${REGION})..."
 echo "======================================================================"
 
+# Auto-detect local google-cloud-sdk if not in global PATH
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+if ! command -v gcloud &> /dev/null && [[ -f "${REPO_ROOT}/google-cloud-sdk/bin/gcloud" ]]; then
+    export PATH="${REPO_ROOT}/google-cloud-sdk/bin:${PATH}"
+fi
+
 # Check for gcloud
 if ! command -v gcloud &> /dev/null; then
     echo "❌ Error: gcloud CLI is not installed or not in PATH."

@@ -12,8 +12,12 @@ Runs against recorded fixtures by default. LIVE_AGENTS=1 adds a live Gemini run.
 import json
 import os
 from pathlib import Path
+import unittest
 
-import pytest
+try:
+    import pytest
+except ImportError:
+    pytest = None
 
 from src.agents.research_agent import (
     RETRIEVAL_MODES,
@@ -271,8 +275,12 @@ def test_all_three_research_modes_are_requested():
 
 
 # ------------------------------------------------------------------ live
+if pytest is not None:
+    _skip_live = pytest.mark.skipif(os.environ.get("LIVE_AGENTS") != "1", reason="set LIVE_AGENTS=1")
+else:
+    _skip_live = unittest.skipIf(os.environ.get("LIVE_AGENTS") != "1", "set LIVE_AGENTS=1")
 
-@pytest.mark.skipif(os.environ.get("LIVE_AGENTS") != "1", reason="set LIVE_AGENTS=1")
+@_skip_live
 def test_live_research_run_is_grounded():
     out = ResearchAgent().run(
         premise="A disgraced Stockholm detective is locked in a night-long "
